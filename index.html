@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chart Noir</title>
+  <meta name="description" content="Chart Noir. Streetwear de ciudad en drops limitados y numerados. El primer drop está en camino.">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Imagen y textos al compartir el enlace (Instagram, WhatsApp, X...).
+       Cuando tengas dominio, pon la dirección completa en og:image
+       (ej. https://tudominio.com/og-image.png): algunas redes no aceptan rutas cortas. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chart Noir">
+  <meta property="og:title" content="Chart Noir">
+  <meta property="og:description" content="Se acerca algo serio. No avisaremos dos veces.">
+  <meta property="og:image" content="og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Logo de Chart Noir sobre fondo negro">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Tipografía: Archivo (una sola familia, con eje de anchura) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&display=swap">
+</head>
+<body class="is-loading">
+  <a class="skip" href="#manifiesto">Saltar al contenido</a>
+  <div id="flash" aria-hidden="true"></div>
+
+  <!-- ===== Pantalla de carga ===== -->
+  <div id="loader" role="status" aria-live="polite" aria-label="Cargando">
+    <div id="num" aria-hidden="true">0</div>
+    <div id="bar" aria-hidden="true"></div>
+  </div>
+
+  <!-- ===== Cabecera (aparece tras la carga) ===== -->
+  <header class="top" id="top">
+    <a class="brand" href="#inicio" aria-label="Chart Noir, volver arriba">
+      <img src="favicon.svg" alt="" width="28" height="28">
+      <span>Chart Noir</span>
+    </a>
+    <nav class="nav" aria-label="Secciones">
+      <a href="#manifiesto">Manifiesto</a>
+      <a href="#drops">Drops</a>
+      <a href="#sonido">Sonido</a>
+      <a href="#archivo">Archivo</a>
+    </nav>
+    <p class="mini" id="mini" aria-hidden="true">
+      <span class="mini-label">Drop <span data-drop="numero"></span></span>
+      <span><b data-unit="d">00</b>d</span>
+      <span><b data-unit="h">00</b>h</span>
+      <span><b data-unit="m">00</b>m</span>
+      <span><b data-unit="s">00</b>s</span>
+    </p>
+  </header>
+
+  <main>
+    <!-- ===== Portada: logo 3D + cuenta atrás ===== -->
+    <section class="hero" id="inicio" aria-labelledby="frase">
+      <canvas id="scene" role="img" aria-label="Logo de Chart Noir en 3D. Arrástralo o usa las flechas del teclado para girarlo."></canvas>
+      <p class="hint" id="hint" aria-hidden="true">Arrastra el logo para girarlo</p>
+
+      <div class="info" id="info">
+        <h1 class="phrase line" id="frase">Se acerca algo serio.</h1>
+        <p class="sub line">El primer drop está en camino. No avisaremos dos veces.</p>
+        <div class="count line" id="count" role="timer" aria-live="off">
+          <span><b data-unit="d">00</b><small>días</small></span><b class="sep" aria-hidden="true">:</b>
+          <span><b data-unit="h">00</b><small>horas</small></span><b class="sep" aria-hidden="true">:</b>
+          <span><b data-unit="m">00</b><small>min</small></span><b class="sep" aria-hidden="true">:</b>
+          <span><b data-unit="s">00</b><small>seg</small></span>
+        </div>
+      </div>
+      <a class="scroll-cue" href="#manifiesto" aria-label="Bajar al manifiesto"><span></span></a>
+    </section>
+
+    <!-- ===== 01 Manifiesto ===== -->
+    <section class="sec" id="manifiesto" aria-labelledby="t-manifiesto">
+      <p class="label reveal"><span>01</span> Manifiesto</p>
+      <h2 class="big reveal" id="t-manifiesto">Un club privado de ciudad.<br>Convertido en ropa.</h2>
+      <div class="cols">
+        <p class="reveal">Londres. Nueva York. Las tres de la mañana. La hora en la que la ciudad deja de mirar y empieza a decidir quién entra.</p>
+        <p class="reveal">Elegancia de calle, exótica y atrevida. Nunca vulgar. Cada pieza se expone como lo que es: una obra que solo verán unos pocos.</p>
+      </div>
+      <blockquote class="quote reveal">No es para todos. Nunca lo fue.</blockquote>
+    </section>
+
+    <!-- ===== 02 Drops ===== -->
+    <section class="sec" id="drops" aria-labelledby="t-drops">
+      <p class="label reveal"><span>02</span> Drops</p>
+      <h2 class="big reveal" id="t-drops">Pocas unidades.<br>Una sola vez.</h2>
+
+      <div class="drops-grid">
+        <ol class="rules">
+          <li class="reveal">
+            <h3>Limitado</h3>
+            <p>Cada drop sale en una tirada corta. No se repone.</p>
+          </li>
+          <li class="reveal">
+            <h3>Numerado</h3>
+            <p>Cada pieza lleva su número de serie. La tuya no la tiene nadie más.</p>
+          </li>
+          <li class="reveal">
+            <h3>Agotado es agotado</h3>
+            <p>Cuando se acaba, pasa al archivo. No vuelve.</p>
+          </li>
+        </ol>
+
+        <article class="ticket reveal" aria-label="Ficha del próximo drop">
+          <header class="ticket-head">
+            <p>Drop <span data-drop="numero"></span></p>
+            <p class="serial">Nº <span data-drop="serie"></span>/<span data-drop="unidades"></span></p>
+          </header>
+          <dl class="ticket-data">
+            <div><dt>Fecha</dt><dd data-drop="fecha"></dd></div>
+            <div><dt>Hora</dt><dd data-drop="hora"></dd></div>
+            <div><dt>Unidades</dt><dd data-drop="unidades"></dd></div>
+            <div><dt>Corte</dt><dd>Unisex</dd></div>
+          </dl>
+          <ul class="prices" id="prices"></ul>
+          <p class="ticket-foot">Medianoche. <span data-drop="unidades"></span> unidades.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===== 03 Código ===== -->
+    <section class="sec" id="codigo" aria-labelledby="t-codigo">
+      <p class="label reveal"><span>03</span> Código</p>
+      <h2 class="visually-hidden" id="t-codigo">Código de la marca</h2>
+      <ul class="values">
+        <li class="reveal"><h3>Exclusividad</h3><p>Lo que lleva todo el mundo no dice nada.</p></li>
+        <li class="reveal"><h3>Ascenso</h3><p>Se viste para donde vas, no para donde estás.</p></li>
+        <li class="reveal"><h3>Autenticidad</h3><p>Sin copiar. Sin fingir.</p></li>
+      </ul>
+    </section>
+
+    <!-- ===== 04 Sonido ===== -->
+    <section class="sec" id="sonido" aria-labelledby="t-sonido">
+      <p class="label reveal"><span>04</span> Sonido</p>
+      <h2 class="big reveal" id="t-sonido">La ropa también suena.</h2>
+      <ol class="tracks">
+        <li class="reveal"><span>01</span>Trap internacional</li>
+        <li class="reveal"><span>02</span>Trap italiano</li>
+        <li class="reveal"><span>03</span>Afro</li>
+        <li class="reveal"><span>04</span>House</li>
+        <li class="reveal"><span>05</span>Sonidos que no se explican</li>
+      </ol>
+    </section>
+
+    <!-- ===== 05 Archivo ===== -->
+    <section class="sec" id="archivo" aria-labelledby="t-archivo">
+      <p class="label reveal"><span>05</span> Archivo</p>
+      <h2 class="big reveal" id="t-archivo">El archivo está vacío.<br>Por ahora.</h2>
+      <p class="lead reveal">Cada pieza agotada vivirá aquí, con su número de serie. Como en un museo: se mira, no se compra.</p>
+      <div class="frames" aria-hidden="true">
+        <div class="frame reveal"><span>Nº 001</span></div>
+        <div class="frame reveal"><span>Nº 002</span></div>
+        <div class="frame reveal"><span>Nº 003</span></div>
+      </div>
+    </section>
+
+    <!-- ===== 06 Redes ===== -->
+    <section class="sec sec-last" id="redes" aria-labelledby="t-redes">
+      <p class="label reveal"><span>06</span> Redes</p>
+      <h2 class="big reveal" id="t-redes">Los que estaban, lo saben.</h2>
+      <ul class="social reveal" id="social"></ul>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <img src="favicon.svg" alt="" width="36" height="36">
+    <p>© <span id="year">2026</span> Chart Noir</p>
+    <p class="foot-note">Hecho de noche.</p>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

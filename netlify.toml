@@ -1,0 +1,4 @@
+# Configuración para Netlify (si se usa Vercel, lo detecta solo).
+[build]
+  command = "npm run build"
+  publish = "dist"

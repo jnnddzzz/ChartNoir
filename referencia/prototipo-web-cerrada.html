@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chart Noir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --negro:#000; --sangre:#8E1426; --hueso:#F2EEE8; --humo:#7d7775;
+  --font:"Archivo","Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--negro:#000;--hueso:#F2EEE8;color-scheme:dark}}
+:root[data-theme="dark"]{--negro:#000;--hueso:#F2EEE8}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--negro);color:var(--hueso);overflow:hidden;font-family:var(--font);-webkit-font-smoothing:antialiased}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none;visibility:hidden}
+#scene.dragging{cursor:grabbing}
+
+/* Entrada */
+#loader{position:fixed;inset:0;z-index:20;background:#000;display:grid;place-items:center}
+#num{font-weight:900;font-stretch:125%;font-variation-settings:"wdth" 125;font-size:clamp(72px,16vw,200px);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+#bar{position:absolute;left:0;bottom:0;height:3px;width:0;background:var(--sangre)}
+#flash{position:fixed;inset:0;z-index:19;background:#fff;opacity:0;pointer-events:none}
+
+/* Mensaje y cuenta atrás */
+.info{position:fixed;left:0;right:0;bottom:calc(6vh + env(safe-area-inset-bottom,0px));z-index:6;text-align:center;padding:0 20px;pointer-events:none}
+.info .line{display:block;opacity:0;transform:translateY(14px);transition:opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1)}
+.info.show .line{opacity:1;transform:none}
+.info.show .l2{transition-delay:.25s}
+.info.show .l3{transition-delay:.5s}
+.phrase{font-weight:800;font-variation-settings:"wdth" 112;font-size:clamp(20px,2.6vw,32px);letter-spacing:.01em;margin:0}
+.sub{margin:8px 0 26px;font-weight:400;font-size:clamp(14px,1.4vw,16px);color:var(--humo)}
+.count{display:inline-flex;align-items:flex-start;gap:clamp(14px,3vw,40px)}
+.count span{display:flex;flex-direction:column;align-items:center}
+.count b{font-weight:900;font-variation-settings:"wdth" 125;font-size:clamp(34px,5.6vw,72px);line-height:1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.count .sep{color:var(--sangre);font-weight:900;font-variation-settings:"wdth" 125;font-size:clamp(34px,5.6vw,72px);line-height:1}
+.count small{margin-top:10px;font-size:12px;letter-spacing:.04em;color:var(--humo)}
+.hint{position:fixed;top:calc(22px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;z-index:6;font-size:13px;color:var(--humo);opacity:0;transition:opacity 1s;pointer-events:none}
+.hint.show{opacity:1}
+@media (max-width:600px){.count{gap:8px}.count small{font-size:11px}}
+</style>
+</head>
+<body>
+<canvas id="scene" aria-label="Logo de Chart Noir en 3D. Arrastra para girarlo."></canvas>
+<div id="flash"></div>
+<div id="loader" role="status" aria-live="polite"><div id="num">0</div><div id="bar"></div></div>
+<div class="hint" id="hint">Arrastra el logo para girarlo</div>
+
+<section class="info" id="info" aria-label="Próximo drop">
+  <p class="phrase line l1">Se acerca algo serio.</p>
+  <p class="sub line l2">El primer drop está en camino. No avisaremos dos veces.</p>
+  <div class="count line l3">
+    <span><b id="d">00</b><small>días</small></span><b class="sep">:</b>
+    <span><b id="h">00</b><small>horas</small></span><b class="sep">:</b>
+    <span><b id="m">00</b><small>min</small></span><b class="sep">:</b>
+    <span><b id="s">00</b><small>seg</small></span>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ===== AJUSTES ===== */
+const DROP_DATE = new Date("2026-12-01T00:00:00+01:00"); // fecha del primer drop (provisional)
+const SHAPES = [{"o":[[4.119,-2.1236],[4.1159,-2.779],[4.1283,-2.7975],[4.2767,-2.8037],[4.3014,-2.8006],[4.3168,-2.7883],[4.3199,-2.5811],[4.3261,-2.575],[4.5549,-2.5781],[4.7527,-2.7883],[4.7805,-2.8037],[4.9753,-2.8037],[4.9907,-2.7913],[4.9876,-2.7728],[4.796,-2.5781],[4.8825,-2.5533],[4.932,-2.5255],[4.9629,-2.4946],[4.9938,-2.4389],[5.0,-2.4142],[4.9969,-2.2628],[4.9753,-2.2102],[4.9289,-2.1607],[4.8733,-2.1298],[4.7898,-2.1113],[4.1376,-2.1113]],"h":[[[4.7991,-2.3091],[4.8022,-2.374],[4.7898,-2.3988],[4.7651,-2.4142],[4.3261,-2.4142],[4.3199,-2.408],[4.3199,-2.2875],[4.3261,-2.2813],[4.7651,-2.2813],[4.7836,-2.2906]]],"t":1},{"o":[[3.6244,-2.1113],[3.6059,-2.1267],[3.6059,-2.7852],[3.6244,-2.8006],[3.7944,-2.8006],[3.8099,-2.7852],[3.8099,-2.1298],[3.7913,-2.1113]],"h":[],"t":1},{"o":[[2.456,-2.2071],[2.4374,-2.2411],[2.425,-2.2906],[2.425,-2.6121],[2.4436,-2.6893],[2.4621,-2.7172],[2.5178,-2.7666],[2.5734,-2.7913],[2.6167,-2.8006],[3.1236,-2.8006],[3.1669,-2.7913],[3.2102,-2.7728],[3.2504,-2.745],[3.2813,-2.711],[3.2968,-2.6832],[3.3122,-2.6244],[3.3122,-2.2937],[3.2844,-2.2133],[3.2689,-2.1917],[3.2226,-2.1515],[3.1824,-2.1298],[3.102,-2.1113],[2.6414,-2.1113],[2.558,-2.1298],[2.5209,-2.1484],[2.49,-2.17]],"h":[[[2.6352,-2.3029],[2.6507,-2.2875],[2.6692,-2.2813],[3.0742,-2.2813],[3.0989,-2.2998],[3.1082,-2.3277],[3.1082,-2.5935],[3.0958,-2.6182],[3.0711,-2.6306],[2.6631,-2.6306],[2.6476,-2.6244],[2.6291,-2.5997],[2.626,-2.3277]]],"t":1},{"o":[[1.2535,-2.1298],[1.2504,-2.7883],[1.2597,-2.7975],[1.2782,-2.8037],[1.4266,-2.8006],[1.4451,-2.7852],[1.4482,-2.3709],[1.915,-2.7852],[1.9614,-2.8037],[2.0943,-2.8006],[2.1128,-2.7852],[2.1128,-2.1267],[2.0912,-2.1113],[1.9366,-2.1113],[1.9181,-2.1267],[1.915,-2.5471],[1.4884,-2.1607],[1.4389,-2.1236],[1.4019,-2.1113],[1.2968,-2.1113],[1.272,-2.1175]],"h":[],"t":1},{"o":[[-0.323,-2.1267],[-0.323,-2.2658],[-0.3014,-2.2813],[0.0263,-2.2844],[0.0294,-2.7883],[0.0448,-2.8006],[0.2148,-2.8006],[0.2303,-2.7883],[0.2334,-2.2875],[0.2396,-2.2813],[0.5641,-2.2813],[0.5827,-2.2751],[0.5951,-2.2566],[0.592,-2.1236],[0.5765,-2.1113],[-0.3045,-2.1113]],"h":[],"t":1},{"o":[[-1.4173,-2.1236],[-1.4204,-2.745],[-1.4173,-2.7883],[-1.3957,-2.8037],[-1.2318,-2.8006],[-1.2164,-2.7883],[-1.2133,-2.5811],[-1.2071,-2.575],[-0.9815,-2.575],[-0.8022,-2.7512],[-0.7651,-2.7944],[-0.7465,-2.8037],[-0.5425,-2.8006],[-0.5301,-2.7913],[-0.5301,-2.779],[-0.728,-2.5781],[-0.7249,-2.5719],[-0.7063,-2.5719],[-0.6538,-2.5564],[-0.592,-2.5224],[-0.5611,-2.4915],[-0.5332,-2.4451],[-0.524,-2.3988],[-0.527,-2.2844],[-0.5487,-2.2195],[-0.592,-2.17],[-0.6662,-2.1298],[-0.7032,-2.1175],[-0.7527,-2.1113],[-1.3988,-2.1113]],"h":[[[-1.2133,-2.2844],[-0.7651,-2.2813],[-0.7496,-2.2875],[-0.7342,-2.306],[-0.7311,-2.3771],[-0.7403,-2.3957],[-0.7682,-2.4142],[-1.2102,-2.4142]]],"t":1},{"o":[[-2.6816,-2.779],[-2.6816,-2.7883],[-2.6662,-2.8006],[-2.4838,-2.8006],[-2.4652,-2.7883],[-2.3879,-2.6646],[-1.9614,-2.6646],[-1.881,-2.7913],[-1.8655,-2.8006],[-1.7233,-2.8037],[-1.677,-2.8006],[-1.6646,-2.7913],[-1.6646,-2.7759],[-2.0603,-2.136],[-2.0726,-2.1206],[-2.1005,-2.1113],[-2.2427,-2.1113],[-2.2736,-2.1267],[-2.4776,-2.4451]],"h":[[[-2.2859,-2.4977],[-2.1716,-2.3153],[-2.0572,-2.5039],[-2.2828,-2.507]]],"t":1},{"o":[[-3.813,-2.1267],[-3.813,-2.7883],[-3.8037,-2.7975],[-3.7635,-2.8037],[-3.6275,-2.8006],[-3.609,-2.7852],[-3.6059,-2.541],[-3.5997,-2.5348],[-3.1453,-2.5317],[-3.1329,-2.5471],[-3.1329,-2.7883],[-3.1175,-2.8006],[-2.9722,-2.8037],[-2.9474,-2.8006],[-2.932,-2.7883],[-2.9289,-2.2411],[-2.932,-2.1267],[-2.9382,-2.1175],[-2.9505,-2.1113],[-3.1144,-2.1113],[-3.1329,-2.1236],[-3.1329,-2.3648],[-3.1391,-2.374],[-3.5997,-2.374],[-3.6059,-2.3679],[-3.609,-2.3431],[-3.609,-2.1267],[-3.6275,-2.1113],[-3.7913,-2.1113]],"h":[],"t":1},{"o":[[-4.9629,-2.1947],[-4.9876,-2.238],[-5.0,-2.2937],[-5.0,-2.609],[-4.9938,-2.6553],[-4.9815,-2.6924],[-4.9598,-2.7264],[-4.9196,-2.7635],[-4.8485,-2.7944],[-4.7836,-2.8037],[-4.1128,-2.8006],[-4.0974,-2.7883],[-4.0943,-2.6553],[-4.0974,-2.643],[-4.1159,-2.6306],[-4.7465,-2.6306],[-4.7651,-2.6244],[-4.7836,-2.5997],[-4.7836,-2.3184],[-4.762,-2.2875],[-4.7465,-2.2813],[-4.1221,-2.2813],[-4.0974,-2.2658],[-4.0974,-2.1267],[-4.119,-2.1113],[-4.7836,-2.1113],[-4.8733,-2.1298],[-4.9289,-2.1607]],"h":[],"t":1},{"o":[[4.4467,1.7094],[4.425,1.7342],[4.4034,1.7372],[4.3725,1.728],[3.9274,1.4961],[3.4699,1.2396],[2.7651,0.8068],[2.0696,0.3493],[2.0355,0.3215],[1.5657,0.0062],[1.3338,-0.136],[0.6414,-0.1391],[-0.0757,-0.1577],[-0.4436,-0.1607],[-0.4467,-0.1577],[0.0974,0.4266],[0.5734,0.9181],[0.9938,1.3416],[1.6337,1.9567],[2.1252,2.4049],[2.3447,2.5873],[2.3725,2.6182],[2.3879,2.6615],[2.3849,2.711],[2.3663,2.7481],[2.3416,2.7728],[2.3076,2.7913],[2.2488,2.8037],[2.1406,2.8037],[1.9212,2.7821],[1.5564,2.7357],[0.9938,2.6368],[0.4961,2.5317],[0.4745,2.5224],[0.1716,2.4544],[-0.017,2.3988],[-0.3323,2.3215],[-0.5147,2.2844],[-0.7929,2.2102],[-1.4204,2.0216],[-1.8068,1.8949],[-2.0325,1.8145],[-2.5425,1.6198],[-2.8516,1.5178],[-3.0866,1.4281],[-3.5255,1.2365],[-3.8964,1.0572],[-4.2056,0.8903],[-4.3663,0.7944],[-4.493,0.711],[-4.5951,0.6368],[-4.7125,0.541],[-4.8331,0.4204],[-4.8949,0.34],[-4.9474,0.2318],[-4.9629,0.1607],[-4.9629,0.0958],[-4.9536,0.0556],[-4.932,0.0031],[-4.8733,-0.0742],[-4.8145,-0.1267],[-4.7249,-0.1824],[-4.6321,-0.2287],[-4.5147,-0.2751],[-4.3818,-0.3153],[-4.0943,-0.3802],[-3.8099,-0.4235],[-3.4606,-0.4575],[-2.9165,-0.4853],[-3.2875,-0.7666],[-3.51,-0.9583],[-3.5811,-1.0294],[-3.5997,-1.0603],[-3.5935,-1.0912],[-3.5811,-1.1036],[-3.5595,-1.1097],[-3.5379,-1.1066],[-3.4359,-1.051],[-3.0649,-0.8192],[-2.9969,-0.7821],[-2.5425,-0.4915],[-1.881,-0.4915],[-1.2318,-0.4791],[-1.2287,-0.4822],[-1.4142,-0.6955],[-1.5533,-0.8655],[-1.813,-1.2025],[-1.881,-1.3045],[-1.915,-1.3663],[-1.9428,-1.4312],[-1.9583,-1.49],[-1.9583,-1.5734],[-1.9366,-1.6507],[-1.915,-1.6878],[-1.8779,-1.7249],[-1.8315,-1.7558],[-1.7573,-1.7867],[-1.6522,-1.8053],[-1.5193,-1.8053],[-1.3864,-1.7898],[-1.1144,-1.7249],[-0.8176,-1.6229],[-0.5425,-1.5147],[-0.119,-1.3199],[0.255,-1.1252],[0.7002,-0.8748],[1.0958,-0.6306],[1.3957,-0.4266],[2.1839,-0.4266],[3.1051,-0.4575],[3.7543,-0.4915],[3.8223,-0.5008],[3.9459,-0.507],[3.9675,-0.5131],[4.0201,-0.5131],[4.3168,-0.5502],[4.4003,-0.5657],[4.4374,-0.5595],[4.456,-0.5348],[4.456,-0.5131],[4.4436,-0.4915],[4.391,-0.4544],[4.3323,-0.4266],[4.187,-0.3864],[3.8563,-0.3246],[3.2597,-0.2442],[2.8331,-0.2009],[2.4776,-0.1762],[1.8006,-0.1515],[1.7913,-0.1453],[2.5951,0.4204],[2.7125,0.51],[3.2937,0.915],[3.8192,1.2674],[4.3849,1.6291],[4.4405,1.6785]],"h":[[[0.8485,-0.4451],[0.5425,-0.6306],[0.2056,-0.8192],[-0.1654,-1.0046],[-0.4621,-1.1406],[-0.7774,-1.2674],[-0.9382,-1.323],[-1.1051,-1.3725],[-1.238,-1.4034],[-1.3091,-1.4127],[-1.4019,-1.4096],[-1.4111,-1.4034],[-1.408,-1.3694],[-1.3833,-1.3138],[-1.3493,-1.255],[-1.2257,-1.0788],[-1.0124,-0.8099],[-0.7249,-0.4668],[0.7218,-0.442]],[[1.1453,1.898],[0.694,1.4776],[-0.0757,0.7326],[-0.5827,0.2164],[-0.9474,-0.1762],[-1.0773,-0.1762],[-1.1453,-0.1824],[-1.4822,-0.1886],[-1.9645,-0.2071],[-2.1036,-0.204],[-1.677,0.0742],[-1.3277,0.3153],[0.0726,1.255],[0.5641,1.5641],[1.0371,1.8362],[1.0896,1.8733],[1.1391,1.9011]],[[1.6059,2.4482],[1.3617,2.3091],[1.0773,2.136],[1.0216,2.1082],[0.3756,1.7125],[0.0046,1.4992],[-0.6074,1.119],[-1.2133,0.7202],[-1.5039,0.5162],[-1.9768,0.1978],[-2.2859,-0.0216],[-2.4714,-0.1453],[-2.5549,-0.2102],[-2.7713,-0.2102],[-3.2318,-0.1855],[-3.5224,-0.1577],[-3.8315,-0.1113],[-4.0355,-0.0649],[-4.2025,-0.0031],[-4.2488,0.0216],[-4.3168,0.0711],[-4.3509,0.1175],[-4.3601,0.1391],[-4.3663,0.1824],[-4.3478,0.2566],[-4.3076,0.3215],[-4.2519,0.3864],[-4.153,0.4791],[-4.0355,0.5719],[-3.8408,0.7017],[-3.4946,0.8995],[-3.1546,1.0665],[-2.7311,1.2519],[-2.3539,1.4034],[-1.8563,1.5796],[-1.7017,1.626],[-1.5317,1.6878],[-1.2658,1.7743],[-0.6383,1.966],[-0.0974,2.1175],[0.5981,2.2906],[1.0649,2.3895],[1.4451,2.4389],[1.5224,2.442],[1.5719,2.4513]]],"t":0}];
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const easeOutExpo = t => t >= 1 ? 1 : 1 - Math.pow(2, -10*t);
+const easeOut = t => 1 - Math.pow(1-t, 3);
+
+/* ===== Render nítido: fondo negro puro, sin niebla ni postprocesado ===== */
+const canvas = document.getElementById("scene");
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2.5));
+renderer.setClearColor(0x000000, 1);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.NoToneMapping;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, 1, .1, 200);
+
+/* Reflejo solo para el logo (no ilumina nada más) */
+const pmrem = new THREE.PMREMGenerator(renderer);
+const envScene = new THREE.Scene(); envScene.background = new THREE.Color(0x000000);
+[[16,2.5,0,8,5],[2.5,12,-10,1,5],[2.5,12,10,1,5]].forEach(([w,h,x,y,z]) => {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w,h), new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide}));
+  m.position.set(x,y,z); m.lookAt(0,0,0); envScene.add(m);
+});
+const envMap = pmrem.fromScene(envScene, .02).texture;
+
+/* ===== Logo 3D ===== */
+const logo = new THREE.Group(); scene.add(logo);
+const matFace = new THREE.MeshStandardMaterial({color:0xF2EEE8, emissive:0x4a4744, roughness:.28, metalness:.2, envMap, envMapIntensity:.7});
+const matMonoSide = new THREE.MeshStandardMaterial({color:0x8a8580, roughness:.35, metalness:.5, envMap, envMapIntensity:.6});
+const matTextSide = new THREE.MeshStandardMaterial({color:0x8E1426, emissive:0x24040a, roughness:.35, metalness:.3, envMap, envMapIntensity:.5});
+SHAPES.forEach(s => {
+  const sh = new THREE.Shape(s.o.map(p => new THREE.Vector2(p[0], p[1])));
+  s.h.forEach(h => sh.holes.push(new THREE.Path(h.map(p => new THREE.Vector2(p[0], p[1])))));
+  const isText = s.t === 1, depth = isText ? .7 : .75;
+  const geo = new THREE.ExtrudeGeometry(sh, {depth, bevelEnabled:true, bevelThickness:.04, bevelSize:.02, bevelSegments:2, curveSegments:1});
+  geo.translate(0, 0, -depth/2);
+  logo.add(new THREE.Mesh(geo, [matFace, isText ? matTextSide : matMonoSide]));
+});
+
+/* Luces limpias, blancas */
+scene.add(new THREE.AmbientLight(0xffffff, .55));
+const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(0, 3, 10); scene.add(key);
+const side = new THREE.DirectionalLight(0xffffff, .5); side.position.set(-8, 4, 2); scene.add(side);
+const cursorLight = new THREE.PointLight(0xffffff, 1.4, 20, 2); cursorLight.position.set(0, 0, 5); scene.add(cursorLight);
+
+/* ===== Encuadre ===== */
+let dist = 30;
+function fit(){
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h;
+  const vf = THREE.MathUtils.degToRad(camera.fov), hf = 2*Math.atan(Math.tan(vf/2)*camera.aspect);
+  dist = Math.max(6.2/Math.tan(hf/2), 7.6/Math.tan(vf/2));
+  const visH = 2*dist*Math.tan(vf/2);
+  logo.userData.baseY = visH * (w < 600 ? .13 : .12);
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", fit); fit();
+
+/* ===== Interacción ===== */
+let rotY = 0, rotX = 0, velY = 0, velX = 0, dragging = false, lastX = 0, lastY = 0, px = 0, py = 0, interactive = false;
+canvas.addEventListener("pointerdown", e => {
+  if(!interactive) return;
+  dragging = true; lastX = e.clientX; lastY = e.clientY; velX = velY = 0;
+  canvas.setPointerCapture(e.pointerId); canvas.classList.add("dragging");
+  document.getElementById("hint").classList.remove("show");
+});
+addEventListener("pointermove", e => {
+  px = (e.clientX/innerWidth)*2-1; py = -(e.clientY/innerHeight)*2+1;
+  if(!dragging) return;
+  const dx = e.clientX-lastX, dy = e.clientY-lastY; lastX = e.clientX; lastY = e.clientY;
+  velY = dx*.008; velX = dy*.004;
+  rotY += velY; rotX = THREE.MathUtils.clamp(rotX+velX, -.55, .55);
+});
+const endDrag = () => { dragging = false; canvas.classList.remove("dragging"); };
+addEventListener("pointerup", endDrag); addEventListener("pointercancel", endDrag);
+addEventListener("keydown", e => { if(!interactive) return; if(e.key==="ArrowLeft") velY -= .07; if(e.key==="ArrowRight") velY += .07; });
+
+/* ===== Animación ===== */
+let hitAt = -1;
+function animate(now){
+  requestAnimationFrame(animate);
+  const t = now/1000;
+  let k = 1, shake = 0;
+  if(hitAt >= 0 && !reduce){
+    const ms = now - hitAt;
+    k = easeOutExpo(Math.min(1, ms/900));
+    shake = ms < 380 ? (1 - ms/380) * .25 : 0;
+  }
+  if(!dragging){
+    rotY += velY; rotX += velX; velY *= .94; velX *= .88;
+    if(Math.abs(velY) < .0015){ const target = Math.round(rotY/(Math.PI*2))*Math.PI*2; rotY += (target-rotY)*.03; }
+    rotX += (py*-.1 - rotX)*.05;
+  }
+  logo.rotation.y = rotY + (dragging ? 0 : px*.2) + (reduce ? 0 : Math.sin(t*.5)*.05) + (1-k)*-.7;
+  logo.rotation.x = rotX + (1-k)*.25;
+  logo.scale.setScalar(1 + (1-k)*.45);
+  logo.position.y = (logo.userData.baseY || 1) + (reduce ? 0 : Math.sin(t*.9)*.06);
+
+  camera.position.set((Math.random()-.5)*shake, (Math.random()-.5)*shake, dist);
+  camera.lookAt(0, 0, 0);
+  cursorLight.position.x += (px*7 - cursorLight.position.x)*.1;
+  cursorLight.position.y += (py*4 + 1 - cursorLight.position.y)*.1;
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+/* ===== Entrada: cuenta 0-100, corte, golpe ===== */
+const loader = document.getElementById("loader"), num = document.getElementById("num"), bar = document.getElementById("bar");
+const LOAD = reduce ? 300 : 2600, t0 = performance.now();
+function step(now){
+  const r = Math.min(1, (now-t0)/LOAD);
+  const p = r < .55 ? easeOut(r/.55)*.6 : r < .8 ? .6+(r-.55)/.25*.12 : .72+easeOut((r-.8)/.2)*.28;
+  num.textContent = Math.floor(p*100); bar.style.width = (p*100)+"%";
+  if(r < 1) return requestAnimationFrame(step);
+  num.style.visibility = "hidden"; bar.style.visibility = "hidden";       // corte seco a negro
+  setTimeout(() => {
+    loader.style.display = "none";
+    canvas.style.visibility = "visible";
+    hitAt = performance.now();
+    if(!reduce) document.getElementById("flash").animate([{opacity:.9},{opacity:0}], {duration:260, easing:"ease-out"});
+    setTimeout(() => {
+      interactive = true;
+      document.getElementById("info").classList.add("show");
+      const hint = document.getElementById("hint"); hint.classList.add("show");
+      setTimeout(() => hint.classList.remove("show"), 4500);
+    }, reduce ? 0 : 700);
+  }, reduce ? 0 : 320);
+}
+requestAnimationFrame(step);
+
+/* ===== Cuenta atrás ===== */
+const pad = n => String(n).padStart(2,"0");
+function tick(){
+  let diff = Math.max(0, DROP_DATE - new Date());
+  const d = Math.floor(diff/864e5); diff -= d*864e5;
+  const h = Math.floor(diff/36e5); diff -= h*36e5;
+  const m = Math.floor(diff/6e4); diff -= m*6e4;
+  const s = Math.floor(diff/1e3);
+  [["d",d],["h",h],["m",m],["s",s]].forEach(([id,v]) => document.getElementById(id).textContent = pad(v));
+}
+tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>
