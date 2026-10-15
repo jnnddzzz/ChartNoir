@@ -22,8 +22,8 @@ export const DROP = {
 // Redes. Pon aquí los enlaces reales cuando estén las cuentas;
 // mientras estén vacíos, la web muestra "Muy pronto" en vez de un enlace roto.
 export const REDES = {
-  instagram: "", // ej. "https://www.instagram.com/tu_usuario"
-  tiktok: "",    // ej. "https://www.tiktok.com/@tu_usuario"
+  instagram: "https://www.instagram.com/jjn.dzz/",
+  tiktok: "https://www.tiktok.com/@jjn.dzz",
 };
 
 // Duración de la cuenta 0 → 100 de la pantalla de carga (milisegundos).

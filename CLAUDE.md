@@ -24,7 +24,7 @@ Jano pidió (15/10/2026) pasar de la web cerrada a una web de marca completa, en
 4. **03 Código**: exclusividad, ascenso, autenticidad.
 5. **04 Sonido**: los géneros de la marca (sin nombrar artistas, para no sugerir colaboraciones).
 6. **05 Archivo**: vacío "por ahora", con marcos numerados (anticipa la fase de archivo).
-7. **06 Redes**: Instagram y TikTok; muestran "Muy pronto" hasta que se pongan los enlaces en `src/config.js`.
+7. **06 Redes**: Instagram y TikTok, ambos @jjn.dzz (enlaces en `src/config.js`; si un enlace se deja vacío, se muestra "Muy pronto").
 
 Base: la web cerrada original. La web está cerrada hasta el primer drop. Su comportamiento:
 

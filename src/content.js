@@ -41,7 +41,10 @@ export function fillContent({ DROP_DATE, DROP, REDES }) {
       el.href = url;
       el.target = "_blank";
       el.rel = "noopener";
-      el.append(Object.assign(document.createElement("small"), { textContent: "↗" }));
+      // Enseña el usuario (@...) sacado del propio enlace.
+      const user = url.replace(/\/+$/, "").split("/").pop().replace(/^@/, "");
+      el.setAttribute("aria-label", `${name}: @${user} (se abre en otra pestaña)`);
+      el.append(Object.assign(document.createElement("small"), { textContent: `@${user} ↗` }));
     } else {
       el.append(Object.assign(document.createElement("small"), { textContent: "Muy pronto" }));
     }
