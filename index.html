@@ -65,11 +65,11 @@
     <!-- ===== Portada: el vestidor gira alrededor del logo ===== -->
     <section class="hero" id="inicio" aria-labelledby="hero-title">
       <div class="hero-sticky">
-        <canvas id="scene" role="img" aria-label="Vestidor circular de Chart Noir en 3D. El logo plateado queda en el centro y la sala gira a su alrededor; en las hornacinas cuelgan las prendas. Arrastra para girar la sala y toca una prenda para verla."></canvas>
+        <canvas id="scene" role="img" aria-label="Vestidor circular de Chart Noir en 3D. El logo plateado flota en el centro y la sala gira a su alrededor; se puede mirar al techo y al suelo. En el escaparate cuelga el conjunto de la Obra 001: chaleco y pantalón. Arrastra para mirar alrededor y toca una prenda para verla."></canvas>
         <div class="labels" id="labels"></div>
 
         <h1 class="visually-hidden" id="hero-title">Chart Noir. Hecho a mano. Una sola vez.</h1>
-        <p class="hint" id="hint" aria-hidden="true">Arrastra para girar la sala · Toca una prenda</p>
+        <p class="hint" id="hint" aria-hidden="true">Arrastra para mirar alrededor · Toca una prenda</p>
 
         <div class="hero-bottom" id="hero-bottom">
           <div class="drop" aria-labelledby="drop-label">
@@ -84,8 +84,17 @@
           <div class="hero-actions">
             <button class="round" type="button" id="turn-left" aria-label="Girar la sala a la izquierda">‹</button>
             <a class="pill" href="#obra">Ver Obra 001</a>
+            <button class="pill pill-ghost" type="button" id="explore" hidden>360°</button>
             <button class="round" type="button" id="turn-right" aria-label="Girar la sala a la derecha">›</button>
           </div>
+        </div>
+
+        <button class="pill explore-exit" type="button" id="explore-exit">Salir del 360°</button>
+
+        <div class="hero-caption" id="hero-caption">
+          <p class="eyebrow">Obra 001 · 1/1 · Talla M</p>
+          <p class="hero-caption-title">El conjunto.</p>
+          <button class="pill" type="button" id="caption-open">Verlo de cerca</button>
         </div>
       </div>
     </section>

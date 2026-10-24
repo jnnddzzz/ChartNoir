@@ -9,32 +9,36 @@
    El trazado mide 10 unidades de ancho; el grupo se escala
    desde fuera (ver main.js) para que quepa en cada pantalla.
 
-   Acabado: plata pulida con reflejos de estudio limpios.
-   El granate queda en los cantos de las letras, satinado y
-   sin reflejos de color.
+   Acabado (el que Jano prefiere, de la primera versión):
+   plata pulida y luminosa en la cara, cantos del monograma
+   en plata y cantos de "CHART NOIR" en granate intenso.
+   Reflejos de estudio limpios, sin manchas de color.
    ========================================================= */
 import * as THREE from "three";
 import shapes from "../../assets/logo-shapes.json";
 
-const DEPTH_TEXT = 0.7;
-const DEPTH_MONOGRAM = 0.75;
+// Poca profundidad: de frente solo se ve la cara plateada con un filo granate,
+// sin que los cantos asomen como "letras fantasma" detrás del logo.
+const DEPTH_TEXT = 0.26;
+const DEPTH_MONOGRAM = 0.4;
 
 export function createLogo(envMap) {
-  // Cara: plata pulida. Poca rugosidad = reflejo nítido, nada borroso.
+  // Cara: plata pulida y luminosa. Poca rugosidad = reflejo nítido.
   const silver = new THREE.MeshPhysicalMaterial({
-    color: 0xf2f3f5, metalness: 1, roughness: 0.16,
-    clearcoat: 1, clearcoatRoughness: 0.04,
-    envMap, envMapIntensity: 1.7,
+    color: 0xeef0f3, metalness: 1, roughness: 0.12,
+    clearcoat: 0.5, clearcoatRoughness: 0.06,
+    envMap, envMapIntensity: 1.85,
   });
-  // Cantos del monograma: plata cepillada, para que el volumen se lea.
+  // Cantos del monograma: plata satinada, para que el volumen se lea.
   const silverSide = new THREE.MeshStandardMaterial({
-    color: 0xaeb1b6, metalness: 1, roughness: 0.32,
+    color: 0xb9bcc2, metalness: 1, roughness: 0.28,
     envMap, envMapIntensity: 1,
   });
-  // Cantos de "CHART NOIR": granate satinado, profundo y limpio.
+  // Cantos de "CHART NOIR": granate intenso, el color de la marca.
   const granate = new THREE.MeshStandardMaterial({
-    color: 0x6e1020, metalness: 0.15, roughness: 0.55,
-    envMap, envMapIntensity: 0.35,
+    color: 0x8e1426, metalness: 0.75, roughness: 0.3,
+    emissive: 0x2a0409,
+    envMap, envMapIntensity: 1.1,
   });
 
   const inner = new THREE.Group();
@@ -65,7 +69,8 @@ export function createLogo(envMap) {
   const logo = new THREE.Group();
   logo.name = "logo";
   logo.add(inner);
-  // Los reflejos de estudio giran con el logo: se ve igual de plateado mire hacia donde mire.
+  // Para girar los reflejos con el logo y medir dónde cae en pantalla.
   logo.userData.materials = [silver, silverSide, granate];
+  logo.userData.box = new THREE.Box3().setFromObject(logo);
   return logo;
 }

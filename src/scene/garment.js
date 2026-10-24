@@ -6,7 +6,8 @@
    - brillo de tela (sheen) en los bordes;
    - percha de madera negra con gancho cromado, o percha de
      pinzas para pantalones;
-   - sombra suave proyectada sobre el fondo de la hornacina.
+   - sombra real (silueta exacta) sobre el fondo de la hornacina,
+     o una sombra suave pintada donde no hay foco con sombras.
    ========================================================= */
 import * as THREE from "three";
 
@@ -104,7 +105,7 @@ function shadowTexture(image) {
 export const HOOK_R = 0.024;
 export const HOOK_CENTER = { x: -HOOK_R, y: 0.08 };
 
-const hangerWood =new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.42, metalness: 0.05 });
+const hangerWood = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.42, metalness: 0.05 });
 
 /** Percha de madera negra (hombros) o de pinzas (pantalón), con gancho cromado. */
 function createHanger(kind, chrome, width) {
@@ -117,13 +118,14 @@ function createHanger(kind, chrome, width) {
   g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hook), 48, 0.0035, 8), chrome));
 
   if (kind === "pinza") {
-    // Barra recta con dos pinzas.
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(width + 0.04, 0.022, 0.014), hangerWood);
-    bar.position.y = -0.015;
+    // Barra fina de acero con dos pinzas.
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, width * 0.92, 16), chrome);
+    bar.rotation.z = Math.PI / 2;
+    bar.position.y = -0.02;
     g.add(bar);
     for (const s of [-1, 1]) {
-      const clip = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.045, 0.022), chrome);
-      clip.position.set(s * (width / 2 - 0.06), -0.045, 0.004);
+      const clip = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.034, 0.016), chrome);
+      clip.position.set(s * (width * 0.46 - 0.02), -0.04, 0.004);
       g.add(clip);
     }
   } else {
@@ -160,6 +162,7 @@ export function createGarment(piece, chrome) {
 
   const material = new THREE.MeshPhysicalMaterial({
     map: piece.texture,
+    color: 0xe6e3df, // un punto por debajo del blanco: el estampado conserva su color bajo el foco
     alphaTest: 0.5,
     alphaToCoverage: true, // bordes limpios, sin dientes
     side: THREE.DoubleSide,
@@ -173,6 +176,11 @@ export function createGarment(piece, chrome) {
     envMapIntensity: 0.25, // la tela no es espejo: casi todo el volumen lo da el foco
   });
   const cloth = new THREE.Mesh(clothGeometry(piece.width, piece.height, kind), material);
+  // Sombra real con la silueta exacta de la prenda (no un rectángulo).
+  cloth.castShadow = true;
+  cloth.customDepthMaterial = new THREE.MeshDepthMaterial({
+    depthPacking: THREE.RGBADepthPacking, map: piece.texture, alphaTest: 0.5,
+  });
   // La parte alta de la prenda queda en los hombros de la percha (o entre las pinzas).
   const top = kind === "pinza" ? -0.035 : -0.02;
   cloth.position.y = top - piece.height / 2;
@@ -182,6 +190,7 @@ export function createGarment(piece, chrome) {
   // La percha de hombros queda dentro de la prenda (solo asoma el gancho);
   // la de pinzas, por delante, agarrando la cintura.
   hanger.position.z = kind === "pinza" ? 0.03 : -0.008;
+  hanger.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   swing.add(hanger);
 
   // Sombra en el fondo: un poco más abajo, como si la luz viniera de arriba.

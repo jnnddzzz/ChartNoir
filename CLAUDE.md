@@ -13,12 +13,18 @@ Marca española de streetwear fundada por Jano. Concepto: un club privado noctur
 - Redes principales: Instagram y TikTok (ahora mismo, la cuenta personal @jjn.dzz).
 - La música ya **no** aparece en la web: Jano decidió que no tiene que ver con la marca.
 
-## Fase actual: el vestidor circular (24/10/2026, segunda versión)
+## Fase actual: el vestidor circular (25/10/2026, tercera versión)
 
 Una sola página con scroll. Estilo **minimalista, moderno, urbano, futurista, limpio y con mucha clase**, con animaciones al hacer scroll. Jano irá añadiendo más obras, fotos e información.
 
 0. **Pantalla de carga**: número 000 → 100 (avance irregular, nunca por delante de lo descargado) y barra granate fina. Al llegar a 100: corte seco a negro (~300 ms), destello blanco breve y entrada.
-1. **Portada 3D: vestidor circular.** Referencia de Jano: blurboys.com (grabación de pantalla: sala circular tipo cámara acorazada, logo fijo en el centro y la sala gira a su alrededor; interfaz mínima abajo). Aquí: el **logo plateado queda fijo en el centro y la sala gira** (arrastrando, con ‹ › o flechas del teclado, y media vuelta al bajar con el scroll; en reposo deriva muy despacio). La pared tiene 12 módulos: armarios de laca negra con tiradores cromados y **hornacinas iluminadas donde cuelgan las prendas**, cada una en 3D (tela curvada con relieve de tejido, percha de madera negra o de pinzas, foco cenital y sombra). Cada prenda lleva una etiqueta flotante ("001 · Chaleco +"); tocar la prenda o su etiqueta gira la sala hasta ella y abre su ficha. Las hornacinas libres esperan las próximas obras. Abajo: cuenta atrás al primer drop, botones de giro y "Ver Obra 001".
+1. **Portada 3D: vestidor circular (tercera versión, 25/10/2026).** Referencia de Jano: blurboys.com (sala circular tipo cámara acorazada, logo fijo en el centro, la sala gira a su alrededor). Combina las dos versiones anteriores: la sala circular que gira alrededor del logo + el recorrido de cámara de la primera (al bajar, la cámara viaja hasta el escaparate).
+   - **Vista 360° en todas direcciones**: arrastrar gira la sala alrededor del logo y deja mirar arriba (techo) y abajo (suelo). Con ratón, siempre; en táctil, con el botón **360°** (el dedo mira libremente y se bloquea el scroll; "Salir del 360°" vuelve). Fuera de ese modo, el dedo en horizontal gira y en vertical hace scroll. ‹ › y flechas del teclado saltan de escaparate. En reposo, deriva lenta y la mirada vuelve al horizonte.
+   - **Escaparate principal (módulo 0)**: el **conjunto completo** de la Obra 001 colgado como se lleva puesto (chaleco arriba, pantalón debajo, cada uno de su soporte cromado), foco con **sombras reales**, fondo de roble ahumado acanalado, tiras de luz en los cantos, marco de acero, peana de mármol y placa grabada "OBRA 001 · 1/1 · TALLA M".
+   - Resto de hornacinas: biblioteca de telas (baldas de roble con telas dobladas en los colores de la marca) hasta que lleguen nuevas obras. Armarios de laca **acanalada** con tiradores cromados y haces de luz.
+   - **Suelo** de mármol negro con vetas, aros y líneas radiales de acero, y charco de luz bajo el logo. **Techo** artesonado: anillo de luz, vigas radiales, focos empotrados y lámpara central de anillos concéntricos de luz y acero.
+   - Etiqueta flotante por escaparate ("001 · El conjunto · 1/1 +", lleva a la sección Obra); nunca se pinta encima del logo. Tocar una prenda abre su ficha.
+   - Al final del recorrido: "Obra 001 · 1/1 · Talla M — El conjunto." + "Verlo de cerca". Abajo en la portada: cuenta atrás, ‹ ›, "Ver Obra 001" y 360° (táctil).
 2. **Obra 001**: "Mi primera obra de arte." · 1/1 · Talla M. El conjunto aparece montado (fotos de estudio, simétricas) y **se separa al hacer scroll** en chaleco y pantalón. Cada pieza abre su ficha: foto, 1/1, talla, resumen, detalles, medidas en plano, "Pedir por Instagram", "Pujar por esta obra" y "Ver la otra pieza".
 3. **Tu voz**: puja ("¿Cuánto pagarías?", cantidad + nombre y contacto opcionales) y opinión ("¿Lo recomendarías?" 1-5 + texto + nombre opcional). Las respuestas quedan registradas (ver Decisiones). El dueño ve un panel privado con todas las respuestas.
 4. **El taller**: hecho a mano · telas elegidas una a una · hecho para durar, con fotos del proceso (patrón del pantalón, espalda del chaleco).
@@ -35,7 +41,10 @@ Cuenta atrás: fecha provisional 1 de diciembre de 2026, 00:00 hora de España, 
 
 - Niebla, transparencias, grano o cualquier efecto que haga ver el logo apagado o borroso. Todo debe verse nítido.
 - Escenarios que tiñan la escena de rosa. (Antes se rechazaron paredes, pedestales y suelos iluminados por eso. El **vestidor lo pidió Jano expresamente** el 24/10/2026; se mantiene con luz blanca neutra y materiales negros para que nada se vuelva rosa. Sin pedestales.)
-- **Reflejos granate en el logo** ("no están bien conseguidos"). El logo lleva reflejos de estudio neutros; el granate solo queda en los cantos de las letras, satinado.
+- **Reflejos granate en el logo** ("no están bien conseguidos"). El granate va en los cantos de las letras, no como reflejos.
+- Logo apagado o gris (segunda versión): tiene que ser llamativo y luminoso.
+- Letras de los cantos superpuestas detrás del logo.
+- Sala que no deja mirar 360° (arriba/abajo), interior de armario pobre, y exponer solo una pieza: el conjunto se expone completo.
 - Prendas como recortes planos colgados ("se ve muy cutre"): siempre en 3D, con volumen, textura y percha realista.
 - Fotos de producto torcidas o con fondo: siempre recortadas, rectas, simétricas y con la luz igualada, como de estudio.
 - Tipografías serif para los números (Bodoni), Michroma, o cursivas tipo Cormorant en la web.
@@ -63,9 +72,9 @@ Tipografía: **Archivo** (Google Fonts, variable), una sola familia.
 - Texto de lectura: peso 400, en humo.
 
 Logo 3D:
-- **Plateado** pulido y nítido con **reflejos de estudio neutros** (softbox cenital, panel gris frontal y línea blanca baja: degradado metálico, no blanco plano). El plató de reflejos gira con el logo, así se ve igual mire hacia donde mire la sala.
-- Cantos del monograma en plata cepillada; cantos de "CHART NOIR" en granate satinado (sin reflejos de color). Bisel mínimo en las letras.
-- Profundidad de extrusión ~0.7 sobre un ancho de 10 unidades del trazado.
+- **Llamativo** (Jano prefiere el de la primera versión): plata pulida y luminosa (softboxes blancas potentes, filos blancos), cantos del monograma en plata y cantos de "CHART NOIR" en **granate intenso**. Reflejos de estudio sin paneles de color. Un barrido de luz lento recorre el metal. El plató de reflejos gira con el logo.
+- **Poca profundidad** (letras 0.26, monograma 0.4 sobre 10 de ancho) y cámara a la altura del logo: de frente solo se ve la cara plateada con un filo granate; los cantos no asoman como "letras fantasma" detrás (Jano lo rechazó).
+- El logo mira siempre a la cámara y ocupa ~47 % del ancho en horizontal y ~84 % en vertical (en móvil va arriba y el conjunto se ve debajo).
 - `assets/logo-shapes.json` contiene el logo trazado a vectores (`t:1` = letras, `t:0` = monograma). Si Jano aporta un SVG vectorizado profesional, sustituir el trazado por ese SVG (SVGLoader de Three.js).
 
 Voz de marca: frases cortas, frías, enigmáticas. Sin emojis alegres ni exclamaciones. Ejemplos: "Los que estaban, lo saben." "No es para todos. Nunca lo fue." "Hecho a mano. Una sola vez."
@@ -88,15 +97,15 @@ Registro de decisiones. Añadir aquí cada nueva decisión de marca o de diseño
 - **Obras en `src/config.js`**: cada obra tiene talla y sus piezas (foto, ancho real, tipo de percha, resumen, detalles, medidas y "caja" dentro del conjunto). Cada pieza se cuelga sola en una hornacina, en orden (las dos primeras a cada lado del logo al empezar).
 - **Fotos de producto "de estudio"**: fondo quitado con rembg/BiRefNet; después se enderezan, el contorno se hace simétrico (intersección con su espejo: la tela de dentro es la real, solo se recortan bordes) y se iguala la luz y el balance de blancos (crudo limpio). Script: `scripts/foto-estudio.py` (instrucciones dentro); Claude lo repite con cada foto nueva. El pantalón usa la foto frontal nueva (se ven los bolsillos).
 - **Prendas 3D** (`src/scene/garment.js`): malla curvada (volumen de pecho/perneras, caída y pliegues), relieve de tejido generado, brillo de tela (sheen), percha de madera negra con gancho cromado o percha de pinzas, sombra suave en el fondo de la hornacina.
-- **Sala** (`src/scene/room.js`): 12 módulos de 30°; hornacinas en los pares, armarios en los impares. Líneas de luz verticales entre módulos, anillo de luz en el techo, aro de acero en el suelo, bañadores de luz sobre los armarios y foco por hornacina. Suelo, laca y cromo reflejan la sala real (una foto cúbica tomada al cargar).
-- **Cámara**: por detrás del centro, mirando a la pared; el logo siempre de frente delante de ella. En móvil vertical el logo sube y la cámara mira algo hacia arriba para que la prenda se vea debajo.
+- **Sala** (`src/scene/room.js`, texturas en `src/scene/textures.js`): 12 módulos de 30°; módulo 0 = escaparate del conjunto; pares = escaparates de obras o biblioteca de telas; impares = armarios acanalados. Texturas generadas por código (mármol, acanalado, roble ahumado, placa grabada): sin descargas extra. Suelo, laca y cromo reflejan la sala real (foto cúbica al cargar). Solo el foco del escaparate principal proyecta sombras (rendimiento).
+- **Cámara** (`src/main.js`): orbita alrededor del logo (giro) con mirada que sube y baja (techo/suelo). Al bajar con el scroll recorre una curva que pasa por un lado del logo (nunca lo atraviesa) hasta quedar frente al escaparate. Tone mapping Neutral, exposición 1.0; la tela lleva un color base un punto por debajo del blanco para que el estampado no se lave bajo el foco.
 - **Pujas y opiniones** (`src/feedback.js`): en la vista previa de Claude se guardan en la base de datos del artifact (cada persona escribe solo lo suyo en `pujas/<id>` y `opiniones/<id>`; solo el dueño lo lee todo). En la web publicada se envían a `FEEDBACK_ENDPOINT` (Google Apps Script → Google Sheets, `scripts/google-sheets.gs`). Sin ninguna de las dos, los formularios se desactivan y lo dicen: nunca se finge un envío.
 - **Cuenta atrás**: cifras estrechas y finas en plata; cada cifra cae como en un marcador. La de la cabecera aparece al salir de la portada.
 - **Separación del conjunto**: en escritorio las piezas se abren en diagonal con su nombre al lado; en móvil solo en vertical, con el nombre debajo.
 - **Entradas sin riesgo**: ninguna animación empieza con el contenido invisible si puede quedarse atascada.
 - **Plan B sin WebGL**: logo plano (`public/logo.svg`) y el resto de la web.
 - **Iconos**: `favicon.svg` y `logo.svg` se generan desde `assets/logo-shapes.json` con `npm run iconos`.
-- **Eliminado**: Sonido, Código, Archivo, la ficha de precios del drop y el vestidor en pasillo (sustituido por el circular).
+- **Eliminado**: Sonido, Código, Archivo, la ficha de precios del drop, el vestidor en pasillo y la primera sala circular (prendas sueltas en hornacinas separadas).
 
 ## Próximas fases (no empezar sin que Jano lo pida)
 
@@ -114,10 +123,11 @@ Registro de decisiones. Añadir aquí cada nueva decisión de marca o de diseño
 - `src/main.js` — une las piezas, el recorrido de cámara y las animaciones de scroll.
 - `src/scene/stage.js` — renderizador, cámara y reflejos de estudio del logo.
 - `src/scene/logo.js` — el logo 3D plateado.
-- `src/scene/room.js` — la sala circular: armarios, hornacinas, luces.
+- `src/scene/room.js` — la sala circular: escaparates, biblioteca de telas, armarios, suelo, techo y luces.
+- `src/scene/textures.js` — mármol, acanalado, roble y placa, generados por código.
 - `src/scene/garment.js` — cada prenda en 3D con su percha y su sombra.
 - `src/feedback.js` — dónde se guardan pujas y opiniones.
-- `src/interaction.js` — girar la sala (arrastre, botones, teclado) y tocar prendas.
+- `src/interaction.js` — vista 360° (arrastre, modo 360° táctil, botones, teclado) y tocar prendas.
 - `src/intro.js` — pantalla de carga 000-100 y entrada.
 - `src/countdown.js` — cuenta atrás (la grande y la de la cabecera).
 - `src/content.js` — la obra, la ficha de cada pieza, puja y opinión, taller, redes y apariciones.

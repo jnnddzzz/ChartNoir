@@ -1,8 +1,9 @@
 /* =========================================================
    Chart Noir — web oficial
-   Punto de entrada: monta el vestidor 3D (la sala gira
-   alrededor del logo), la pantalla de carga, la cuenta atrás,
-   la obra, la puja y la opinión, y las animaciones de scroll.
+   Punto de entrada: monta el vestidor 3D (la sala gira 360°
+   alrededor del logo y, al bajar, la cámara viaja hasta el
+   escaparate del conjunto), la pantalla de carga, la cuenta
+   atrás, la obra, la puja y la opinión.
    ========================================================= */
 import "./styles.css";
 import * as THREE from "three";
@@ -24,22 +25,24 @@ const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const smooth = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
 const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
-const Y = new THREE.Vector3(0, 1, 0);
+const dir = (a, out = new THREE.Vector3()) => out.set(Math.sin(a), 0, -Math.cos(a));
 
 const canvas = document.getElementById("scene");
 const hero = document.getElementById("inicio");
 const heroBottom = document.getElementById("hero-bottom");
+const heroCaption = document.getElementById("hero-caption");
 const hint = document.getElementById("hint");
 const labelsBox = document.getElementById("labels");
 const obraSection = document.getElementById("obra");
 const set = document.getElementById("set");
 const obraHelp = document.getElementById("obra-help");
+const exploreBtn = document.getElementById("explore");
+const exitBtn = document.getElementById("explore-exit");
 
 // ---------- Contenido ----------
 const obra = OBRAS[0];
-const dialog = createPieceDialog(REDES, {
-  onBid: () => document.getElementById("voz").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }),
-});
+const goTo = (id) => document.getElementById(id).scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+const dialog = createPieceDialog(REDES, { onBid: () => goTo("voz") });
 renderObra(obra, { onOpen: dialog.open });
 renderSocial(REDES);
 renderProceso(TALLER_FOTOS);
@@ -48,11 +51,9 @@ document.getElementById("drop-label").textContent = `Primer drop · ${dropDay}`;
 startCountdown(document.getElementById("count"), DROP_DATE, { animated: !reduce });
 startCountdown(document.getElementById("mini"), DROP_DATE);
 createFeedbackStore({ endpoint: FEEDBACK_ENDPOINT }).then((store) => setupVoz(store, obra));
+document.getElementById("caption-open").addEventListener("click", () => goTo("obra"));
 
 // ---------- Escena 3D ----------
-const CAM = { y: 1.5, back: 1.5 };       // cámara: por detrás del centro, ve media sala
-const LOGO_DIST = 2.3;                    // distancia del logo a la cámara
-
 const manager = new THREE.LoadingManager();
 let loadedFraction = 0;
 manager.onProgress = (_, done, total) => { loadedFraction = done / total; };
@@ -62,16 +63,18 @@ let sceneReady = Promise.resolve();
 try {
   const stage = createStage(canvas);
   const logo = createLogo(stage.studio);
+  logo.rotation.order = "YXZ"; // primero mira a la cámara, luego se inclina
   stage.scene.add(logo);
-  three = { ...stage, logo, room: null, garments: [] };
+  three = { ...stage, logo, room: null, displays: [], cloths: [] };
 
   sceneReady = loadPieces(manager).then((pieces) => {
-    const room = createRoom({ pieces });
+    const room = createRoom({ obras: OBRAS, pieces });
     stage.scene.add(room.group);
     three.room = room;
-    three.garments = room.garments;
+    three.displays = room.displays;
+    three.cloths = room.displays.flatMap((d) => d.garments.map((g) => ({ mesh: g.userData.cloth, piece: g.userData.piece, display: d })));
     captureReflections(stage, room, logo);
-    buildLabels(room.garments);
+    buildLabels(room.displays);
     stage.renderer.compile(stage.scene, stage.camera);
     stage.renderer.render(stage.scene, stage.camera);
   });
@@ -84,7 +87,7 @@ try {
   loadedFraction = 1;
 }
 
-/* Las fotos de cada pieza, como texturas para colgarlas en las hornacinas. */
+/* Las fotos de cada pieza, como texturas para colgarlas en los escaparates. */
 function loadPieces(mgr) {
   const loader = new THREE.TextureLoader(mgr);
   const load = (url) => new Promise((res) => loader.load(url, res, undefined, () => res(null)));
@@ -104,18 +107,18 @@ function loadPieces(mgr) {
   return Promise.all(jobs).then((list) => list.filter(Boolean));
 }
 
-/* Una foto de la sala desde el centro: el suelo, la laca y el cromo
-   reflejan el vestidor de verdad (sin colores inventados). */
+/* Una foto de la sala desde el centro: el mármol, la laca y el cromo
+   reflejan el vestidor de verdad. */
 function captureReflections(stage, room, logo) {
   const rt = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType });
   const cubeCam = new THREE.CubeCamera(0.05, 20, rt);
-  cubeCam.position.set(0, 1.3, 0);
+  cubeCam.position.set(0, 1.4, 0);
   logo.visible = false;
   cubeCam.update(stage.renderer, stage.scene);
   logo.visible = true;
   for (const m of room.reflective) {
     m.envMap = rt.texture;
-    m.envMapIntensity = m.metalness > 0.5 ? 1 : 0.7;
+    m.envMapIntensity = m.metalness > 0.5 ? 1 : 0.8;
     m.needsUpdate = true;
   }
 }
@@ -126,60 +129,66 @@ const ndc = new THREE.Vector2();
 let hovered = null;
 
 function pick(x, y) {
-  if (!three?.garments.length) return null;
+  if (!three?.cloths.length) return null;
   ndc.set((x / canvas.clientWidth) * 2 - 1, -(y / canvas.clientHeight) * 2 + 1);
   raycaster.setFromCamera(ndc, three.camera);
-  const hits = raycaster.intersectObjects(three.garments.map((g) => g.cloth), false);
-  return hits.length ? three.garments.find((g) => g.cloth === hits[0].object) : null;
+  const hits = raycaster.intersectObjects(three.cloths.map((c) => c.mesh), false);
+  return hits.length ? three.cloths.find((c) => c.mesh === hits[0].object) : null;
 }
 
-let openTimer = 0;
-function selectGarment(g) {
-  // La sala gira hasta dejar la prenda junto al logo, y se abre su ficha.
-  // (por el camino más corto, y quedándose en el lado donde ya estaba)
-  const delta = Math.atan2(Math.sin(g.angle - currentYaw), Math.cos(g.angle - currentYaw));
-  const side = Math.sign(delta) || 1;
-  const goalYaw = currentYaw + delta - side * 0.32;
-  controls.state.goal = goalYaw - baseYaw() - scrollYaw();
-  controls.state.vel = 0;
-  clearTimeout(openTimer);
-  openTimer = setTimeout(() => dialog.open(g.piece.obra, g.piece.pieza), reduce ? 0 : 450);
-}
-
-/* Etiquetas flotantes sobre cada prenda (también se pueden tocar). */
+/* Una etiqueta flotante por escaparate: lleva a la obra completa. */
 const labels = [];
-function buildLabels(garments) {
-  for (const g of garments) {
+function buildLabels(displays) {
+  for (const d of displays) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "tag";
-    b.innerHTML = `<span>${g.piece.obra.numero}</span><b></b><i aria-hidden="true">+</i>`;
-    b.querySelector("b").textContent = g.piece.pieza.nombre;
-    b.setAttribute("aria-label", `Ver ${g.piece.pieza.nombre.toLowerCase()}, obra ${g.piece.obra.numero}`);
-    b.addEventListener("click", () => selectGarment(g));
-    // Mientras el cursor está encima, la sala no se mueve: fácil de pulsar.
+    b.innerHTML = `<span>${d.obra.numero}</span><b>El conjunto · ${d.obra.edicion}</b><i aria-hidden="true">+</i>`;
+    b.setAttribute("aria-label", `Ver la obra ${d.obra.numero} completa`);
+    b.addEventListener("click", () => goTo("obra"));
     b.addEventListener("pointerenter", () => { controls.state.hold = true; });
     b.addEventListener("pointerleave", () => { controls.state.hold = false; controls.state.idleSince = performance.now(); });
     labelsBox.append(b);
-    const top = new THREE.Vector3();
-    labels.push({ g, el: b, top });
+    const anchor = d.focus.clone();
+    anchor.y += 0.92;
+    labels.push({ d, el: b, anchor });
   }
 }
 
 const controls = createControls(three ? canvas : hero, {
-  step: (Math.PI * 2) / 6, // de hornacina en hornacina
+  step: (Math.PI * 2) / 6, // de escaparate en escaparate
   onInteract: () => hint.classList.remove("show"),
-  onTap: (x, y) => { const g = pick(x, y); if (g) selectGarment(g); },
+  onTap: (x, y) => { const c = pick(x, y); if (c) dialog.open(c.piece.obra, c.piece.pieza); },
   onMove: (x, y) => {
-    const g = pick(x, y);
-    if (g !== hovered) {
-      hovered = g;
-      canvas.style.cursor = g ? "pointer" : "";
+    const c = pick(x, y);
+    if (c !== hovered) {
+      hovered = c;
+      canvas.style.cursor = c ? "pointer" : "";
     }
   },
 });
 document.getElementById("turn-left").addEventListener("click", () => controls.turn(-1));
 document.getElementById("turn-right").addEventListener("click", () => controls.turn(1));
+
+// Modo 360° en pantallas táctiles: el dedo mira libremente (sin hacer scroll).
+function setExplore(on) {
+  controls.setExplore(on);
+  document.body.classList.toggle("exploring", on);
+  document.documentElement.style.overflow = on ? "hidden" : "";
+  if (on) {
+    hint.textContent = "Mira alrededor: arriba, abajo, a los lados";
+    hint.classList.add("show");
+  } else {
+    hint.classList.remove("show");
+    controls.state.pitch = controls.state.pitch * 0.5;
+  }
+}
+if (controls.coarse) {
+  exploreBtn.hidden = false;
+  exploreBtn.addEventListener("click", () => setExplore(true));
+  exitBtn.addEventListener("click", () => setExplore(false));
+  hint.textContent = "Desliza para girar la sala · 360° para mirar alrededor";
+}
 
 // ---------- Scroll ----------
 let heroP = 0;
@@ -188,8 +197,10 @@ function onScroll() {
   const hr = hero.getBoundingClientRect();
   heroP = clamp01(-hr.top / (hr.height - vh));
   controls.state.visible = hr.bottom > 0;
-  heroBottom.style.opacity = String(1 - smooth(0.7, 0.95, heroP));
-  if (heroP > 0.05) hint.classList.remove("show");
+  heroBottom.style.opacity = String(1 - smooth(0.04, 0.2, heroP));
+  heroBottom.style.pointerEvents = heroP > 0.2 ? "none" : "";
+  heroCaption.classList.toggle("show", heroP > 0.82);
+  if (heroP > 0.04) hint.classList.remove("show");
   document.body.classList.toggle("scrolled", hr.bottom < vh * 0.6);
 
   // El conjunto se separa mientras su sección está fija en pantalla.
@@ -203,33 +214,84 @@ window.addEventListener("scroll", onScroll, { passive: true });
 window.addEventListener("resize", onScroll);
 onScroll();
 
-// ---------- Encuadre ----------
+// ---------- Cámara ----------
 const portrait = () => three.camera.aspect < 0.8;
-// Al empezar: en horizontal, una prenda a cada lado del logo; en vertical, la primera de frente.
-const baseYaw = () => (portrait() ? 0 : (Math.PI * 2) / 12);
-// Al bajar por la portada, la sala da media vuelta y enseña el resto de hornacinas.
-const scrollYaw = () => heroP * Math.PI * 0.85;
+// Al empezar: en horizontal, el escaparate a la derecha del logo; en vertical, detrás (el logo sube).
+const baseYaw = () => (portrait() ? 0 : -0.5);
+
+const L = new THREE.Vector3();          // centro del logo
+const camOrbit = new THREE.Vector3();   // cámara alrededor del logo
+const lookOrbit = new THREE.Vector3();
+const camFinal = new THREE.Vector3();   // cámara frente al escaparate
+const lookFinal = new THREE.Vector3();
+const ctrl = new THREE.Vector3();
+const camPos = new THREE.Vector3();
+const camLook = new THREE.Vector3();
+const tmp = new THREE.Vector3();
+const tmp2 = new THREE.Vector3();
+
+function computeCamera(yaw, pitch, p) {
+  const port = portrait();
+  const D = port ? 3.4 : 3.3;
+  L.set(0, port ? 2.5 : 1.66, 0);
+  const camY = port ? 1.72 : 1.66; // a la altura del logo: sin cantos asomando por encima
+  // Órbita: detrás del logo, mirando hacia él (y a la pared que hay detrás).
+  camOrbit.copy(L).addScaledVector(dir(yaw, tmp), -D);
+  camOrbit.y = camY;
+  // Mirada base hacia el logo (en vertical, algo más abajo: el escaparate se ve debajo).
+  lookOrbit.set(L.x, port ? 1.8 : L.y - 0.1, L.z);
+  // Mirar arriba y abajo: giramos la dirección de la mirada.
+  const v = tmp2.subVectors(lookOrbit, camOrbit);
+  const horiz = Math.hypot(v.x, v.z);
+  const elev = Math.atan2(v.y, horiz) + pitch;
+  const len = v.length();
+  lookOrbit.set(
+    camOrbit.x + (v.x / horiz) * Math.cos(elev) * len,
+    camOrbit.y + Math.sin(elev) * len,
+    camOrbit.z + (v.z / horiz) * Math.cos(elev) * len,
+  );
+
+  // Escaparate principal: la cámara viaja hasta tenerlo delante.
+  const main = three.displays[0];
+  if (!main || p <= 0) {
+    camPos.copy(camOrbit);
+    camLook.copy(lookOrbit);
+    return;
+  }
+  const a = main.angle;
+  camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 0.85 : 1.45);
+  camFinal.y = 1.62;
+  lookFinal.copy(main.focus);
+  // Curva que pasa por un lado del logo (nunca lo atraviesa).
+  const side = tmp.set(Math.cos(a), 0, Math.sin(a));
+  const sign = Math.sign(side.dot(camOrbit)) || 1;
+  ctrl.copy(side).multiplyScalar(2.2 * sign);
+  ctrl.y = 1.9;
+  const s = smooth(0, 1, p);
+  const u = 1 - s;
+  camPos.set(
+    u * u * camOrbit.x + 2 * u * s * ctrl.x + s * s * camFinal.x,
+    u * u * camOrbit.y + 2 * u * s * ctrl.y + s * s * camFinal.y,
+    u * u * camOrbit.z + 2 * u * s * ctrl.z + s * s * camFinal.z,
+  );
+  camLook.lerpVectors(lookOrbit, lookFinal, smooth(0, 0.8, p));
+}
 
 // ---------- Animación ----------
 let hitAt = -1;
 let last = performance.now();
-let currentYaw = 0;
-const camPos = new THREE.Vector3();
-const camLook = new THREE.Vector3();
-const logoPos = new THREE.Vector3();
-const tmp = new THREE.Vector3();
+let currentYaw = null;
 
 function frame(now) {
   requestAnimationFrame(frame);
   if (!three || hitAt < 0 || !controls.state.visible) { last = now; return; }
   const { renderer, scene, camera, logo, room } = three;
   const s = controls.state;
-
-  const f = Math.min(4, (now - last) / (1000 / 60)); // fotogramas de 60 Hz transcurridos
+  const f = Math.min(4, (now - last) / (1000 / 60));
   last = now;
   const t = now / 1000;
 
-  // Giro: inercia del arrastre, saltos de hornacina y una deriva lentísima en reposo.
+  // Giro: inercia, saltos de escaparate, deriva lentísima en reposo.
   if (!s.dragging) {
     if (s.goal !== null) {
       s.yaw += (s.goal - s.yaw) * (1 - Math.pow(0.88, f));
@@ -237,51 +299,46 @@ function frame(now) {
     } else {
       s.yaw += s.vel * f;
       s.vel *= Math.pow(0.93, f);
-      if (!reduce && !s.hold && now - s.idleSince > 4000) s.yaw += 0.00045 * f;
+      if (!reduce && !s.hold && heroP < 0.02 && now - s.idleSince > 4500) s.yaw += 0.0004 * f;
     }
+    s.pitch += s.pvel * f;
+    s.pvel *= Math.pow(0.9, f);
+    // Tras unos segundos sin tocar, la mirada vuelve suave al horizonte.
+    if (now - s.idleSince > 2500) s.pitch += (0 - s.pitch) * (1 - Math.pow(0.97, f));
   }
-  const target = baseYaw() + scrollYaw() + s.yaw;
-  currentYaw += (target - currentYaw) * (1 - Math.pow(0.8, f));
-  const rot = -currentYaw;
-
-  // Cámara: detrás del centro, mirando hacia la pared que toca.
-  camPos.set(0, CAM.y, CAM.back).applyAxisAngle(Y, rot);
-  // En vertical mira un poco hacia arriba: el logo arriba y la prenda debajo.
-  camLook.set(0, CAM.y + (portrait() ? 0.25 : -0.12), CAM.back - 6).applyAxisAngle(Y, rot);
+  const yawTarget = baseYaw() + s.yaw;
+  currentYaw = currentYaw === null ? yawTarget : currentYaw + (yawTarget - currentYaw) * (1 - Math.pow(0.8, f));
+  computeCamera(currentYaw, s.pitch * (1 - heroP), heroP);
 
   // Entrada: el logo llega grande y girado y frena en seco, con sacudida.
-  let k = 1;
-  let shake = 0;
+  let k = 1, shake = 0;
   if (!reduce) {
     const ms = now - hitAt;
     k = easeOutExpo(Math.min(1, ms / 900));
-    shake = ms < 380 ? (1 - ms / 380) * 0.04 : 0;
+    shake = ms < 380 ? (1 - ms / 380) * 0.035 : 0;
   }
   camPos.x += (Math.random() - 0.5) * shake;
   camPos.y += (Math.random() - 0.5) * shake;
   camera.position.copy(camPos);
   camera.lookAt(camLook);
 
-  // Logo: siempre de frente, centrado, a su tamaño en cada pantalla.
-  const vFov = THREE.MathUtils.degToRad(camera.fov);
-  const visH = 2 * LOGO_DIST * Math.tan(vFov / 2);
-  const visW = visH * camera.aspect;
-  const width = (portrait() ? 0.8 : 0.4) * visW;
-  const lift = visH * (portrait() ? 0.27 : 0.05); // en vertical, el logo arriba y la prenda debajo
-  logoPos.set(0, CAM.y + lift + (reduce ? 0 : Math.sin(t * 0.9) * 0.01), CAM.back - LOGO_DIST).applyAxisAngle(Y, rot);
-  logo.position.copy(logoPos);
+  // Logo: siempre de frente a la cámara, grande y llamativo.
+  const visW = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect * (portrait() ? 3.4 : 3.3);
+  const width = (portrait() ? 0.84 : 0.47) * visW;
+  logo.position.copy(L);
+  logo.position.y += reduce ? 0 : Math.sin(t * 0.9) * 0.012;
   logo.scale.setScalar((width / 10) * (1 + (1 - k) * 0.5));
-  for (const m of logo.userData.materials) m.envMapRotation.set(0, rot, 0);
-  logo.rotation.set(
-    -s.py * 0.06 + (1 - k) * 0.25,
-    rot + s.px * 0.12 + (reduce ? 0 : Math.sin(t * 0.5) * 0.03) + (1 - k) * -0.8,
-    0,
-  );
+  const face = Math.atan2(camera.position.x - L.x, camera.position.z - L.z);
+  logo.rotation.set((1 - k) * 0.25 - s.py * 0.04, face + s.px * 0.1 + (1 - k) * -0.8, 0);
+  // Un barrido de luz lento recorre el metal: el logo nunca está quieto del todo.
+  const sweep = reduce ? 0 : Math.sin(t * 0.35) * 0.45;
+  for (const m of logo.userData.materials) m.envMapRotation.set(0, face + sweep, 0);
 
-  // Prendas: brillan un poco más bajo el cursor.
-  for (const g of three.garments) {
-    const spot = g.group.userData.spot;
-    if (spot) spot.intensity += ((g === hovered ? 15 : 9) - spot.intensity) * 0.15;
+  // El escaparate brilla un poco más bajo el cursor.
+  for (const d of three.displays) {
+    const on = hovered && hovered.display === d;
+    const base = d === three.displays[0] ? 15 : 10;
+    d.spot.intensity += ((on ? base * 1.5 : base) - d.spot.intensity) * 0.15;
   }
   room?.update(t);
   renderer.render(scene, camera);
@@ -289,28 +346,44 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-/* Coloca cada etiqueta sobre su prenda; se ocultan si la prenda no está de frente. */
+/* Coloca cada etiqueta sobre su escaparate. Se ocultan si el escaparate
+   no está de frente o si quedarían encima del logo. */
 const fwd = new THREE.Vector3();
-const toG = new THREE.Vector3();
+const toA = new THREE.Vector3();
+const corner = new THREE.Vector3();
+function logoRect(cam, w, h) {
+  const box = three.logo.userData.box;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < 8; i++) {
+    corner.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z)
+      .applyMatrix4(three.logo.matrixWorld).project(cam);
+    const x = (corner.x * 0.5 + 0.5) * w;
+    const y = (-corner.y * 0.5 + 0.5) * h;
+    x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+  }
+  return { x0: x0 - 16, y0: y0 - 16, x1: x1 + 16, y1: y1 + 16 };
+}
 function placeLabels() {
   if (!labels.length) return;
   const cam = three.camera;
   cam.getWorldDirection(fwd);
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
-  for (const L of labels) {
-    // Sobre el gancho (no sobre la tela, que se mece): la etiqueta queda quieta.
-    L.g.group.getWorldPosition(L.top);
-    L.top.y += 0.2;
-    toG.subVectors(L.top, cam.position).normalize();
-    const facing = toG.dot(fwd);
-    tmp.copy(L.top).project(cam);
+  three.logo.updateMatrixWorld();
+  const lr = logoRect(cam, w, h);
+  for (const L2 of labels) {
+    toA.subVectors(L2.anchor, cam.position).normalize();
+    const facing = toA.dot(fwd);
+    tmp.copy(L2.anchor).project(cam);
     const x = (tmp.x * 0.5 + 0.5) * w;
     const y = (-tmp.y * 0.5 + 0.5) * h;
-    const visible = facing > 0.75 && x > 24 && x < w - 24 && y > 70 && y < h - 40;
-    L.el.classList.toggle("show", visible && document.body.classList.contains("revealed"));
-    L.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) translate(-50%, -100%)`;
-    L.el.tabIndex = visible ? 0 : -1;
+    const elW = L2.el.offsetWidth || 160;
+    const elH = L2.el.offsetHeight || 32;
+    const overLogo = x + elW / 2 > lr.x0 && x - elW / 2 < lr.x1 && y > lr.y0 && y - elH < lr.y1;
+    const visible = facing > 0.7 && x > elW / 2 + 8 && x < w - elW / 2 - 8 && y > 80 && y < h - 40 && !overLogo && heroP < 0.75;
+    L2.el.classList.toggle("show", visible && document.body.classList.contains("revealed"));
+    L2.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) translate(-50%, -100%)`;
+    L2.el.tabIndex = visible ? 0 : -1;
   }
 }
 
@@ -335,7 +408,7 @@ runIntro({
       controls.state.enabled = true;
       if (three) {
         hint.classList.add("show");
-        setTimeout(() => hint.classList.remove("show"), 5000);
+        setTimeout(() => { if (!document.body.classList.contains("exploring")) hint.classList.remove("show"); }, 5000);
       }
     }, reduce ? 0 : 700);
   },
