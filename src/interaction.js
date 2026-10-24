@@ -1,72 +1,86 @@
 /* =========================================================
-   Interacción: arrastrar con ratón o dedo, flechas del teclado
-   y posición del cursor (para la inclinación y la luz).
-   Solo guarda el estado; la animación lo usa en cada fotograma.
-
-   En móvil el dedo en horizontal gira el logo y en vertical
-   hace scroll de la página (touch-action: pan-y en el CSS).
+   Controles del vestidor:
+   - arrastrar (ratón o dedo, en horizontal) gira la sala, con inercia;
+   - flechas ← → del teclado y botones ‹ › saltan a la siguiente hornacina;
+   - un toque sin arrastrar es un "clic" sobre la escena (para elegir prenda);
+   - la posición del cursor inclina un poco el logo.
+   En móvil, el dedo en vertical sigue haciendo scroll (touch-action: pan-y).
    ========================================================= */
 
-export function createControls(canvas, { onFirstDrag } = {}) {
+export function createControls(canvas, { step, onTap, onMove, onInteract }) {
   const state = {
-    enabled: false,   // se activa cuando el logo ya ha entrado
-    visible: true,    // la portada está en pantalla
+    enabled: false,
+    visible: true,
     dragging: false,
-    rotY: 0, rotX: 0, // giro acumulado
-    velY: 0, velX: 0, // inercia
-    px: 0, py: 0,     // cursor normalizado de -1 a 1 sobre la portada
+    yaw: 0,       // giro añadido por la persona (radianes)
+    vel: 0,       // inercia del giro
+    goal: null,   // giro objetivo al saltar de hornacina
+    px: 0, py: 0, // cursor normalizado de -1 a 1 sobre la escena
+    idleSince: performance.now(),
   };
+  let startX = 0;
+  let startY = 0;
   let lastX = 0;
-  let lastY = 0;
+  let moved = false;
 
   canvas.addEventListener("pointerdown", (e) => {
     if (!state.enabled) return;
     state.dragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    state.velX = state.velY = 0;
+    moved = false;
+    startX = lastX = e.clientX;
+    startY = e.clientY;
+    state.vel = 0;
+    state.goal = null;
     canvas.setPointerCapture(e.pointerId);
     canvas.classList.add("dragging");
-    onFirstDrag?.();
+    onInteract?.();
   });
 
   window.addEventListener("pointermove", (e) => {
     const r = canvas.getBoundingClientRect();
     state.px = ((e.clientX - r.left) / r.width) * 2 - 1;
     state.py = -((e.clientY - r.top) / r.height) * 2 + 1;
-    if (!state.dragging) return;
+    if (!state.dragging) {
+      onMove?.(e.clientX - r.left, e.clientY - r.top);
+      return;
+    }
     const dx = e.clientX - lastX;
-    const dy = e.clientY - lastY;
     lastX = e.clientX;
-    lastY = e.clientY;
-    state.velY = dx * 0.008;
-    state.velX = dy * 0.004;
-    state.rotY += state.velY;
-    state.rotX = clamp(state.rotX + state.velX, -0.55, 0.55);
+    if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 6) moved = true;
+    // Arrastrar a la izquierda mueve la sala a la izquierda: miramos más a la derecha.
+    const k = 2.4 / Math.max(320, r.width);
+    state.vel = -dx * k;
+    state.yaw += state.vel;
+    state.idleSince = performance.now();
   });
 
-  const endDrag = (e) => {
+  const end = (e) => {
+    if (!state.dragging) return;
     state.dragging = false;
     canvas.classList.remove("dragging");
-    // En móvil, al soltar el dedo el "cursor" vuelve al centro
-    // para que el logo no se quede inclinado hacia un lado.
-    if (e.pointerType !== "mouse") state.px = state.py = 0;
+    state.idleSince = performance.now();
+    if (!moved && e.type === "pointerup") {
+      const r = canvas.getBoundingClientRect();
+      onTap?.(e.clientX - r.left, e.clientY - r.top);
+    }
   };
-  window.addEventListener("pointerup", endDrag);
-  window.addEventListener("pointercancel", endDrag); // el navegador tomó el gesto para hacer scroll
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end); // el navegador tomó el gesto para hacer scroll
 
-  // ← → giran el logo mientras la portada está a la vista.
-  // (↑ ↓ se dejan para hacer scroll, como en cualquier web.)
+  function turn(dir) {
+    state.goal = (state.goal ?? state.yaw) + dir * step;
+    state.vel = 0;
+    state.idleSince = performance.now();
+    onInteract?.();
+  }
+
   window.addEventListener("keydown", (e) => {
-    if (!state.enabled || !state.visible) return;
-    if (e.key === "ArrowLeft") state.velY -= 0.07;
-    else if (e.key === "ArrowRight") state.velY += 0.07;
+    if (!state.enabled || !state.visible || e.target.closest?.("input, textarea, dialog")) return;
+    if (e.key === "ArrowLeft") turn(-1);
+    else if (e.key === "ArrowRight") turn(1);
     else return;
     e.preventDefault();
-    onFirstDrag?.();
   });
 
-  return state;
+  return { state, turn };
 }
-
-const clamp = (v, min, max) => Math.min(max, Math.max(min, v));

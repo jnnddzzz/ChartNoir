@@ -1,6 +1,6 @@
 # Chart Noir
 
-La web oficial de Chart Noir: pantalla de carga, un vestidor en 3D con el logo plateado flotando entre las prendas, la cuenta atrás hasta el primer drop, la Obra 001 (pieza 1/1) que se separa en chaleco y pantalón al hacer scroll, y el taller (hecho a mano, telas elegidas una a una).
+La web oficial de Chart Noir: pantalla de carga, un vestidor circular en 3D que gira alrededor del logo plateado con las prendas en sus hornacinas, la cuenta atrás hasta el primer drop, la Obra 001 (pieza 1/1) que se separa en chaleco y pantalón, puja y opinión, y el taller.
 
 Hecha con **Vite** (la herramienta que sirve la web mientras trabajas y la empaqueta para publicarla) y **Three.js** (la librería que dibuja el logo en 3D).
 
@@ -37,9 +37,15 @@ export const DROP_DATE = new Date("2026-12-01T00:00:00+01:00");
 
 ## Añadir una prenda (una "obra")
 
-1. Quita el fondo a las fotos (una por pieza) y guárdalas en `.webp` o `.png` en `public/productos/obra-002/`.
-2. Abre `src/config.js` y, dentro de `OBRAS`, copia el bloque de la obra 001 y cambia el número, el nombre, los textos y las rutas de las fotos.
-3. Guarda. La prenda aparece colgada en el vestidor 3D automáticamente.
+1. Pásale las fotos a Claude: les quita el fondo, las endereza y las deja simétricas, como de estudio (`scripts/foto-estudio.py`).
+2. Las fotos van en `public/productos/obra-002/`.
+3. En `src/config.js`, dentro de `OBRAS`, copia el bloque de la obra 001 y cambia número, talla, textos, medidas y fotos.
+4. La prenda aparece colgada en su hornacina del vestidor 3D automáticamente.
+
+## Pujas y opiniones
+
+- En la vista previa de Claude se guardan solas y tú ves un panel privado con todas las respuestas.
+- En la web publicada se guardan en una hoja de Google Sheets tuya. Para activarlo, sigue los pasos de `scripts/google-sheets.gs` (5 minutos) y pega la dirección en `FEEDBACK_ENDPOINT` de `src/config.js`. Hasta entonces, los formularios avisan de que se abren muy pronto.
 
 Las redes (`REDES`) y la fecha del drop (`DROP_DATE`) también están en `src/config.js`.
 
@@ -54,12 +60,14 @@ Chart-Noir/
 │   ├── styles.css        colores y tipografía de la marca
 │   ├── intro.js          pantalla de carga 0 → 100
 │   ├── countdown.js      cuenta atrás
-│   ├── content.js        la obra, la ficha de cada pieza y las redes
+│   ├── content.js        la obra, la ficha, puja y opinión, taller y redes
+│   ├── feedback.js       dónde se guardan pujas y opiniones
 │   ├── interaction.js    ratón, dedo y teclado
 │   └── scene/
 │       ├── stage.js      cámara y reflejos (plata y granate)
 │       ├── logo.js       el logo plateado en 3D
-│       └── closet.js     el vestidor: armarios, perchas y prendas
+│       ├── room.js       la sala circular: armarios, hornacinas y luces
+│       └── garment.js    cada prenda en 3D con su percha
 ├── public/               favicon, logo plano, imagen para compartir
 │   └── productos/        fotos sin fondo de cada obra
 ├── assets/               logos originales y trazado del logo

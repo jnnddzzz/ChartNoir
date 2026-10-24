@@ -1,5 +1,5 @@
 /* =========================================================
-   Escenario 3D: renderizador, cámara y mapa de reflejos.
+   Escenario 3D: renderizador, cámara y reflejos.
    Todo nítido: sin niebla, sin desenfoques, sin postprocesado.
    ========================================================= */
 import * as THREE from "three";
@@ -10,60 +10,62 @@ export function createStage(canvas) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
   renderer.setClearColor(0x000000, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.NoToneMapping; // nada que apague el plateado
+  // Tone mapping neutro: el plateado brilla sin quemarse y los negros siguen siendo negros.
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.05;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 80);
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 60);
 
-  const envMap = createReflections(renderer);
+  const studio = createStudioReflections(renderer);
 
   function resize() {
     const w = canvas.clientWidth || window.innerWidth;
     const h = canvas.clientHeight || window.innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    camera.fov = camera.aspect < 0.8 ? 52 : 36; // en móvil vertical, algo más angular
     camera.updateProjectionMatrix();
   }
   resize();
   new ResizeObserver(resize).observe(canvas);
 
-  return { renderer, scene, camera, envMap };
+  return { renderer, scene, camera, studio };
 }
 
-/* Lo que "ve" reflejado el metal: un estudio negro con tiras de luz
-   blanca (el brillo plateado) y paneles granate (los reflejos de color).
-   Solo existe dentro de este mapa; no ilumina la sala. */
-function createReflections(renderer) {
+/* Reflejos de estudio para el logo: un plató negro con softboxes blancas
+   y grises neutros. Limpio, sin color: el plateado se ve plateado. */
+function createStudioReflections(renderer) {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const env = new THREE.Scene();
-  env.background = new THREE.Color(0x050505);
+  env.background = new THREE.Color(0x0a0a0a);
 
-  const white = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-  const soft = new THREE.MeshBasicMaterial({ color: 0x9a9da3, side: THREE.DoubleSide });
-  const granate = new THREE.MeshBasicMaterial({ color: 0x8e1426, side: THREE.DoubleSide });
-  const granateDeep = new THREE.MeshBasicMaterial({ color: 0x4c0a18, side: THREE.DoubleSide });
+  const mat = (c) => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide });
+  const white = mat(0xffffff);
+  const grey = mat(0x5a5c60);
+  const dark = mat(0x202022);
 
   const panels = [
     // [material, ancho, alto, x, y, z]
-    [white, 14, 1.2, 0, 7, 3],     // tira cenital: brillo principal de la cara
-    [white, 18, 3.2, 0, 1.2, 9],   // panel frontal: la cara plateada brilla de frente
-    [soft, 22, 4, 0, -2.5, 8],     // relleno bajo
-    [white, 0.5, 9, -7, 2, 2],     // tiras verticales laterales: filos nítidos
-    [white, 0.5, 9, 7, 2, 2],
-    [granate, 6, 10, -9, 0, -2],   // paneles granate: reflejos de color
-    [granate, 6, 10, 9, 0, -2],
-    [granateDeep, 20, 6, 0, -6, 2], // suelo granate oscuro
+    [white, 12, 1.4, 0, 6, 3],      // softbox cenital: el brillo largo de arriba
+    [grey, 14, 2.2, 0, 1.6, 9],     // panel frontal gris: cara plateada, no blanca plana
+    [white, 14, 0.5, 0, -0.6, 9],   // línea blanca baja: el degradado metálico
+    [grey, 6, 8, -8, 1, 4],         // rellenos laterales neutros
+    [grey, 6, 8, 8, 1, 4],
+    [white, 0.35, 7, -5.5, 1.5, -3], // filos finos: recortan el contorno
+    [white, 0.35, 7, 5.5, 1.5, -3],
+    [dark, 30, 10, 0, -6, 0],       // suelo oscuro: da profundidad a la parte baja
   ];
-  for (const [mat, w, h, x, y, z] of panels) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-    m.position.set(x, y, z);
-    m.lookAt(0, 0, 0);
-    env.add(m);
+  for (const [m, w, h, x, y, z] of panels) {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+    p.position.set(x, y, z);
+    p.lookAt(0, 0, 0);
+    env.add(p);
   }
 
-  const texture = pmrem.fromScene(env, 0.015).texture;
+  const texture = pmrem.fromScene(env, 0.02).texture;
   env.traverse((o) => o.geometry?.dispose());
-  [white, soft, granate, granateDeep].forEach((m) => m.dispose());
+  [white, grey, dark].forEach((m) => m.dispose());
   pmrem.dispose();
   return texture;
 }

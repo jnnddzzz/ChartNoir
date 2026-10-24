@@ -14,11 +14,11 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Chart Noir">
   <meta property="og:title" content="Chart Noir">
-  <meta property="og:description" content="Hecho a mano. Una sola pieza. Obra 001.">
+  <meta property="og:description" content="Hecho a mano. Una sola vez. Obra 001.">
   <meta property="og:image" content="og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Logo de Chart Noir sobre fondo negro">
+  <meta property="og:image:alt" content="El vestidor de Chart Noir con el logo plateado en el centro">
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
 
@@ -49,6 +49,7 @@
     </a>
     <nav class="nav" aria-label="Secciones">
       <a href="#obra">Obra 001</a>
+      <a href="#voz">Tu voz</a>
       <a href="#taller">Taller</a>
     </nav>
     <p class="mini" id="mini" aria-hidden="true">
@@ -61,17 +62,18 @@
   </header>
 
   <main>
-    <!-- ===== Portada: el vestidor 3D ===== -->
+    <!-- ===== Portada: el vestidor gira alrededor del logo ===== -->
     <section class="hero" id="inicio" aria-labelledby="hero-title">
       <div class="hero-sticky">
-        <canvas id="scene" role="img" aria-label="Vestidor de Chart Noir en 3D, con el logo plateado flotando entre las prendas. Arrastra el logo para girarlo."></canvas>
+        <canvas id="scene" role="img" aria-label="Vestidor circular de Chart Noir en 3D. El logo plateado queda en el centro y la sala gira a su alrededor; en las hornacinas cuelgan las prendas. Arrastra para girar la sala y toca una prenda para verla."></canvas>
+        <div class="labels" id="labels"></div>
 
-        <p class="hint" id="hint" aria-hidden="true">Arrastra el logo para girarlo</p>
+        <h1 class="visually-hidden" id="hero-title">Chart Noir. Hecho a mano. Una sola vez.</h1>
+        <p class="hint" id="hint" aria-hidden="true">Arrastra para girar la sala · Toca una prenda</p>
 
-        <div class="hero-copy" id="hero-copy">
-          <h1 class="hero-title" id="hero-title"><span>Hecho a mano.</span><span>Una sola vez.</span></h1>
+        <div class="hero-bottom" id="hero-bottom">
           <div class="drop" aria-labelledby="drop-label">
-            <p class="eyebrow" id="drop-label">Primer drop · 01.12.2026</p>
+            <p class="eyebrow" id="drop-label">Primer drop</p>
             <div class="count" id="count" role="timer" aria-live="off">
               <div class="unit"><b data-unit="d">00</b><small>Días</small></div>
               <div class="unit"><b data-unit="h">00</b><small>Horas</small></div>
@@ -79,14 +81,12 @@
               <div class="unit"><b data-unit="s">00</b><small>Seg</small></div>
             </div>
           </div>
+          <div class="hero-actions">
+            <button class="round" type="button" id="turn-left" aria-label="Girar la sala a la izquierda">‹</button>
+            <a class="pill" href="#obra">Ver Obra 001</a>
+            <button class="round" type="button" id="turn-right" aria-label="Girar la sala a la derecha">›</button>
+          </div>
         </div>
-
-        <p class="hero-caption" id="hero-caption" aria-hidden="true">
-          <span class="eyebrow">Obra 001</span>
-          <span>Colgada en el vestidor. 1/1.</span>
-        </p>
-
-        <a class="scroll-cue" href="#obra"><span>Entra</span><i aria-hidden="true"></i></a>
       </div>
     </section>
 
@@ -94,18 +94,87 @@
     <section class="obra" id="obra" aria-labelledby="obra-title">
       <div class="obra-sticky">
         <div class="obra-copy">
-          <p class="eyebrow reveal"><span data-obra="numero"></span> · <span class="ed" data-obra="edicion"></span></p>
+          <p class="eyebrow reveal"><span data-obra="numero"></span> · <span class="ed" data-obra="edicion"></span> · Talla <span data-obra="talla"></span></p>
           <h2 class="title reveal" id="obra-title" data-obra="titular"></h2>
           <p class="body reveal" data-obra="texto"></p>
-          <ul class="facts reveal">
-            <li><span>Edición</span><b data-obra="edicion"></b></li>
-            <li><span>Hecho</span><b>A mano</b></li>
-            <li><span>Tela</span><b>Toile granate</b></li>
-          </ul>
+          <ul class="facts reveal" id="obra-facts"></ul>
           <p class="obra-help" id="obra-help">Sigue bajando: el conjunto se separa. Toca una pieza para verla.</p>
         </div>
         <div class="set-wrap">
           <div class="set" id="set"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Tu voz: puja y opinión ===== -->
+    <section class="voz" id="voz" aria-labelledby="voz-title">
+      <p class="eyebrow reveal">Tu voz</p>
+      <h2 class="title reveal" id="voz-title">Tu precio.<br>Tu opinión.</h2>
+      <p class="body reveal">Chart Noir se construye con quien la lleva. Dinos cuánto pagarías por la Obra 001 y qué te parece. Lo leemos todo.</p>
+      <p class="voz-off" id="voz-off" hidden>Las pujas y opiniones se abren muy pronto. Mientras tanto, escríbenos por Instagram.</p>
+
+      <div class="voz-grid">
+        <form class="card reveal" id="bid-form" novalidate>
+          <p class="eyebrow">Puja · Obra <span data-obra="numero-corto"></span> · 1/1</p>
+          <h3 class="card-title">¿Cuánto pagarías?</h3>
+          <div class="amount">
+            <label class="visually-hidden" for="bid-amount">Cantidad en euros</label>
+            <input id="bid-amount" name="cantidad" type="number" inputmode="numeric" min="1" max="5000" step="1" value="150" required>
+            <span class="amount-cur" aria-hidden="true">€</span>
+          </div>
+          <label class="visually-hidden" for="bid-range">Ajusta la cantidad</label>
+          <input class="range" id="bid-range" type="range" min="40" max="600" step="5" value="150">
+          <div class="field">
+            <label for="bid-name">Nombre <span>opcional</span></label>
+            <input id="bid-name" name="nombre" type="text" maxlength="60" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="bid-contact">Instagram o email <span>opcional, para contactarte</span></label>
+            <input id="bid-contact" name="contacto" type="text" maxlength="100" autocomplete="email">
+          </div>
+          <button class="btn" type="submit" disabled>Registrar puja</button>
+          <p class="status" id="bid-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <form class="card reveal" id="opinion-form" novalidate>
+          <p class="eyebrow">Opinión</p>
+          <h3 class="card-title">¿Qué te parece?</h3>
+          <fieldset class="stars">
+            <legend>¿Lo recomendarías?</legend>
+            <div class="stars-row">
+              <input type="radio" id="r1" name="nota" value="1"><label for="r1">1</label>
+              <input type="radio" id="r2" name="nota" value="2"><label for="r2">2</label>
+              <input type="radio" id="r3" name="nota" value="3"><label for="r3">3</label>
+              <input type="radio" id="r4" name="nota" value="4"><label for="r4">4</label>
+              <input type="radio" id="r5" name="nota" value="5"><label for="r5">5</label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="op-text">Tu opinión</label>
+            <textarea id="op-text" name="texto" rows="4" maxlength="600" required placeholder="Qué te gusta, qué cambiarías, qué te gustaría ver después."></textarea>
+          </div>
+          <div class="field">
+            <label for="op-name">Nombre <span>opcional</span></label>
+            <input id="op-name" name="nombre" type="text" maxlength="60" autocomplete="name">
+          </div>
+          <button class="btn" type="submit" disabled>Enviar opinión</button>
+          <p class="status" id="op-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+      <p class="privacy reveal">Solo usaremos tus datos para responderte sobre Chart Noir. Nunca los compartimos.</p>
+
+      <!-- Solo lo ve el dueño de la web -->
+      <div class="owner" id="owner" hidden>
+        <p class="eyebrow">Solo tú ves esto · Respuestas recibidas</p>
+        <div class="owner-grid">
+          <div>
+            <h3 class="card-title">Pujas <span id="owner-bid-count"></span></h3>
+            <table class="owner-table"><thead><tr><th>€</th><th>Nombre</th><th>Contacto</th><th>Fecha</th></tr></thead><tbody id="owner-bids"></tbody></table>
+          </div>
+          <div>
+            <h3 class="card-title">Opiniones <span id="owner-op-count"></span></h3>
+            <ul class="owner-ops" id="owner-ops"></ul>
+          </div>
         </div>
       </div>
     </section>
@@ -124,10 +193,11 @@
           <p class="body reveal">La tela se busca antes que el diseño. Si no nos convence al tacto, no se corta.</p>
         </li>
         <li class="claim">
-          <h3 class="title reveal">Nada se repite.</h3>
-          <p class="body reveal">No seguimos temporadas. Cada obra es una idea nueva, y cuando se va, se va.</p>
+          <h3 class="title reveal">Hecho para durar.</h3>
+          <p class="body reveal">Doble forro y piezas que guardan su forma solas. Cada costura está pensada para que la prenda aguante años.</p>
         </li>
       </ol>
+      <div class="proceso" id="proceso"></div>
     </section>
 
     <!-- ===== Cierre ===== -->
@@ -149,10 +219,17 @@
     <div class="piece-info">
       <p class="eyebrow" id="piece-obra"></p>
       <h2 class="title" id="piece-name"></h2>
-      <p class="piece-ed" id="piece-ed"></p>
-      <p class="body" id="piece-detail"></p>
-      <ul class="facts" id="piece-facts"></ul>
-      <a class="btn" id="piece-cta" target="_blank" rel="noopener">Pedir por Instagram</a>
+      <p class="piece-ed"><span id="piece-ed"></span><small id="piece-size"></small></p>
+      <p class="body" id="piece-summary"></p>
+      <ul class="piece-details" id="piece-details"></ul>
+      <div class="measures">
+        <p class="eyebrow">Medidas en plano · aproximadas</p>
+        <dl id="piece-measures"></dl>
+      </div>
+      <div class="piece-actions">
+        <a class="btn" id="piece-cta" target="_blank" rel="noopener">Pedir por Instagram</a>
+        <button class="btn btn-line" type="button" id="piece-bid">Pujar por esta obra</button>
+      </div>
       <button class="link" type="button" id="piece-other"></button>
     </div>
   </dialog>
