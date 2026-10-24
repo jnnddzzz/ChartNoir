@@ -1,6 +1,6 @@
 # Chart Noir
 
-La web oficial de Chart Noir: pantalla de carga, logo 3D interactivo con la cuenta atrás hasta el primer drop, y la marca contada en seis secciones (Manifiesto, Drops, Código, Sonido, Archivo y Redes).
+La web oficial de Chart Noir: pantalla de carga, un vestidor en 3D con el logo plateado flotando entre las prendas, la cuenta atrás hasta el primer drop, la Obra 001 (pieza 1/1) que se separa en chaleco y pantalón al hacer scroll, y el taller (hecho a mano, telas elegidas una a una).
 
 Hecha con **Vite** (la herramienta que sirve la web mientras trabajas y la empaqueta para publicarla) y **Three.js** (la librería que dibuja el logo en 3D).
 
@@ -35,13 +35,13 @@ export const DROP_DATE = new Date("2026-12-01T00:00:00+01:00");
 
 `+01:00` es la hora de España en invierno. Si el drop cae en verano (de finales de marzo a finales de octubre), usa `+02:00`.
 
-## Cambiar precios, unidades o redes
+## Añadir una prenda (una "obra")
 
-También en `src/config.js`:
-- `DROP` — número del drop, unidades, número de serie de ejemplo y precios.
-- `REDES` — pega los enlaces de Instagram y TikTok. Mientras estén vacíos se ve "Muy pronto".
+1. Quita el fondo a las fotos (una por pieza) y guárdalas en `.webp` o `.png` en `public/productos/obra-002/`.
+2. Abre `src/config.js` y, dentro de `OBRAS`, copia el bloque de la obra 001 y cambia el número, el nombre, los textos y las rutas de las fotos.
+3. Guarda. La prenda aparece colgada en el vestidor 3D automáticamente.
 
-Los textos de las secciones están directamente en `index.html`.
+Las redes (`REDES`) y la fecha del drop (`DROP_DATE`) también están en `src/config.js`.
 
 ## Cómo está organizado
 
@@ -49,17 +49,19 @@ Los textos de las secciones están directamente en `index.html`.
 Chart-Noir/
 ├── index.html            la página: textos de todas las secciones
 ├── src/
-│   ├── config.js         ajustes (fecha del drop, duración de la carga…)
+│   ├── config.js         fecha del drop, redes y obras
 │   ├── main.js           une las piezas y anima el logo
 │   ├── styles.css        colores y tipografía de la marca
 │   ├── intro.js          pantalla de carga 0 → 100
 │   ├── countdown.js      cuenta atrás
-│   ├── content.js        drop, redes y apariciones al hacer scroll
+│   ├── content.js        la obra, la ficha de cada pieza y las redes
 │   ├── interaction.js    ratón, dedo y teclado
 │   └── scene/
-│       ├── stage.js      cámara, luces y encuadre
-│       └── logo.js       el logo en 3D
+│       ├── stage.js      cámara y reflejos (plata y granate)
+│       ├── logo.js       el logo plateado en 3D
+│       └── closet.js     el vestidor: armarios, perchas y prendas
 ├── public/               favicon, logo plano, imagen para compartir
+│   └── productos/        fotos sin fondo de cada obra
 ├── assets/               logos originales y trazado del logo
 ├── referencia/           el prototipo aprobado
 └── CLAUDE.md             la guía de marca y del proyecto
