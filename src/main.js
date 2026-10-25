@@ -208,11 +208,12 @@ const axisUp = new THREE.Vector3();
 const axisRight = new THREE.Vector3();
 let lastSpinAt = 0;
 
+// Toda la zona del símbolo cuenta (también los huecos entre trazos): agarrarlo es fácil.
 function hitLogo(x, y) {
   if (!three?.logo.visible) return false;
-  ndc.set((x / canvas.clientWidth) * 2 - 1, -(y / canvas.clientHeight) * 2 + 1);
-  raycaster.setFromCamera(ndc, three.camera);
-  return raycaster.intersectObject(three.logo, true).length > 0;
+  three.logo.updateMatrixWorld();
+  const r = logoRect(three.camera, canvas.clientWidth, canvas.clientHeight);
+  return x > r.x0 + 10 && x < r.x1 - 10 && y > r.y0 + 10 && y < r.y1 - 10;
 }
 function spinLogo(dx, dy) {
   // Arrastrar en horizontal gira alrededor del eje vertical de la vista;

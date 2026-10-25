@@ -35,6 +35,9 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
     state.dragging = true;
     const r0 = canvas.getBoundingClientRect();
     state.mode = hitLogo?.(e.clientX - r0.left, e.clientY - r0.top) ? "logo" : "room";
+    // Ratón, touchpad o lápiz: giro libre en todas direcciones siempre (aunque la
+    // pantalla también sea táctil). Con el dedo, en vertical se hace scroll salvo en modo 360°.
+    state.free = e.pointerType !== "touch";
     moved = false;
     startX = lastX = e.clientX;
     startY = lastY = e.clientY;
@@ -69,7 +72,7 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
     const k = 2.6 / Math.max(320, r.width);
     state.vel = -dx * k * (Math.cos(state.pitch) < 0 ? -1 : 1);
     state.yaw += state.vel;
-    if (state.explore) {
+    if (state.explore || state.free) {
       state.pvel = dy * k;
       state.pitch += state.pvel;
     }
