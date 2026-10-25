@@ -17,7 +17,7 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
     visible: true,
     dragging: false,
     mode: "room",      // "room" (gira la sala) o "logo" (gira el símbolo)
-    explore: !coarse,  // con ratón siempre; en táctil, solo en modo 360°
+    explore: !coarse,  // con ratón siempre; en táctil, arriba del todo (main.js lo activa)
     yaw: 0, pitch: 0,  // giro añadido por la persona (radianes)
     vel: 0, pvel: 0,   // inercia
     goal: null,        // giro objetivo al saltar de escaparate

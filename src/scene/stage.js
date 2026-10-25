@@ -47,19 +47,24 @@ function createStudioReflections(renderer) {
   const mat = (c) => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide });
   const white = mat(0xffffff);
   const soft = mat(0x9a9da3);
-  const dark = mat(0x18181a);
+  const dark = mat(0x26272a);
 
   const panels = [
     // [material, ancho, alto, x, y, z]
     [white, 14, 1.2, 0, 7, 3],       // tira cenital: brillo principal
-    [white, 18, 3.2, 0, 1.2, 9],     // panel frontal: la cara plateada brilla de frente
-    [soft, 22, 4, 0, -2.5, 8],       // relleno bajo: degradado metálico
+    [white, 18, 6.5, 0, 1.6, 9],     // panel frontal grande: la cara sigue brillando al inclinarla
+    [soft, 20, 5, 0, 6.2, 6.5],      // relleno alto: inclinada hacia atrás, no se apaga
+    [soft, 22, 5, 0, -3.4, 8],       // relleno bajo: inclinada hacia delante, tampoco
     [white, 0.5, 9, -7, 2, 2],       // tiras verticales laterales: filos nítidos
     [white, 0.5, 9, 7, 2, 2],
     [white, 4, 10, -9, 0, -2],       // laterales blancos: brilla también cuando gira de canto
     [white, 4, 10, 9, 0, -2],
-    [soft, 18, 3, 0, 1.5, -9],       // fondo: la cara trasera también se ve plateada
-    [dark, 20, 6, 0, -6, 2],         // suelo oscuro: contraste en la parte baja
+    // Detrás, lo mismo que delante: de espaldas el símbolo brilla igual.
+    [white, 18, 6.5, 0, 1.6, -9],
+    [white, 14, 1.2, 0, 7, -3],
+    [soft, 20, 5, 0, 6.2, -6.5],
+    [soft, 22, 5, 0, -3.4, -8],
+    [dark, 20, 6, 0, -6.5, 1],       // suelo oscuro: contraste en la parte baja
   ];
   for (const [m, w, h, x, y, z] of panels) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);

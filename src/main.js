@@ -255,12 +255,35 @@ if (controls.coarse && three) {
   controls.bind(grip);
 }
 
+// En táctil, arriba del todo (en la sala) el dedo gira la sala y el símbolo en todas
+// direcciones; para bajar está el botón ↓ (y, en cuanto se baja, el dedo vuelve a hacer scroll).
 if (controls.coarse) {
-  exploreBtn.hidden = false;
-  exploreBtn.addEventListener("click", () => setExplore(true));
-  exitBtn.addEventListener("click", () => setExplore(false));
-  hint.textContent = "Gira el símbolo con el dedo · 360° para girar la sala en todas direcciones";
+  hint.textContent = "Gira la sala y el símbolo con el dedo, hacia cualquier lado · ↓ para bajar";
 }
+exitBtn.addEventListener("click", () => setExplore(false));
+
+/* Botón ↓: el recorrido de cámara hasta la vitrina y la vuelta de Génesis, como una
+   secuencia de cine (se puede cortar tocando la pantalla o con la rueda). */
+let journeyRaf = 0;
+function journey() {
+  cancelAnimationFrame(journeyRaf);
+  const from = window.scrollY;
+  const to = hero.offsetTop + hero.offsetHeight - window.innerHeight;
+  if (reduce) { window.scrollTo(0, to); return; }
+  const dur = 4200 * Math.min(1, Math.abs(to - from) / Math.max(1, to - hero.offsetTop));
+  const t0 = performance.now();
+  const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / Math.max(400, dur));
+    window.scrollTo(0, from + (to - from) * ease(k));
+    if (k < 1) journeyRaf = requestAnimationFrame(step);
+  };
+  journeyRaf = requestAnimationFrame(step);
+}
+const stopJourney = () => cancelAnimationFrame(journeyRaf);
+window.addEventListener("wheel", stopJourney, { passive: true });
+window.addEventListener("touchstart", stopJourney, { passive: true });
+document.getElementById("journey").addEventListener("click", journey);
 
 // ---------- Scroll ----------
 let heroP = 0;
@@ -268,6 +291,7 @@ function onScroll() {
   const vh = window.innerHeight;
   const hr = hero.getBoundingClientRect();
   heroP = clamp01(-hr.top / (hr.height - vh));
+  if (controls.coarse && !document.body.classList.contains("exploring")) controls.setExplore(heroP < 0.03);
   controls.state.visible = hr.bottom > 0;
   heroBottom.style.opacity = String(1 - smooth(0.04, 0.2, heroP));
   heroBottom.style.pointerEvents = heroP > 0.2 ? "none" : "";
@@ -393,7 +417,7 @@ function frame(now) {
     s.pvel *= Math.pow(0.9, f);
     // En reposo, la mirada vuelve sola al horizonte (por el camino más corto).
     const home = Math.round(s.pitch / (Math.PI * 2)) * Math.PI * 2;
-    if (now - s.idleSince > 2500) s.pitch += (home - s.pitch) * (1 - Math.pow(0.97, f));
+    if (now - s.idleSince > 5000) s.pitch += (home - s.pitch) * (1 - Math.pow(0.985, f));
   }
   const yawTarget = baseYaw() + s.yaw;
   currentYaw = currentYaw === null ? yawTarget : currentYaw + (yawTarget - currentYaw) * (1 - Math.pow(0.8, f));
@@ -436,7 +460,7 @@ function frame(now) {
   }
   // Vuelta completa automática cada pocos segundos, mientras nadie lo toca.
   if (!reduce && introDone && heroP < 0.05) {
-    if (autoSpin.start < 0 && now > autoSpin.next && now - lastSpinAt > 4000 && !s.dragging) autoSpin.start = now;
+    if (autoSpin.start < 0 && now > autoSpin.next && now - lastSpinAt > 4000 && now - s.idleSince > 4000 && !s.dragging) autoSpin.start = now;
     if (autoSpin.start >= 0) {
       const pr = Math.min(1, (now - autoSpin.start) / 2600);
       autoSpin.angle = Math.PI * 2 * (pr < 0.5 ? 4 * pr * pr * pr : 1 - Math.pow(-2 * pr + 2, 3) / 2);
@@ -458,8 +482,12 @@ function frame(now) {
   logo.quaternion.copy(logoQ).multiply(qView).multiply(qFace);
   // Los reflejos de estudio acompañan a la cámara, con un barrido de luz lento.
   const sweep = reduce ? 0 : Math.sin(t * 0.35) * 0.45;
-  envEuler.setFromQuaternion(qEnv.copy(qView).multiply(qSweep.setFromAxisAngle(WORLD_UP, sweep)), "YXZ");
-  for (const m of logo.userData.materials) m.envMapRotation.set(ENV_SIGN * envEuler.x, envEuler.y, ENV_SIGN * envEuler.z, "YXZ");
+  // El plató gira pegado al símbolo (con cualquier giro: arrastre, vuelta automática,
+  // vista desde arriba o abajo): el metal brilla igual desde todos lados, sin saltos.
+  // Three.js aplica la rotación con los ángulos en negativo y orden YXZ, así que la
+  // descomponemos en orden ZXY: el resultado es justo la inversa del giro del símbolo.
+  envEuler.setFromQuaternion(qEnv.copy(logo.quaternion).multiply(qSweep.setFromAxisAngle(WORLD_UP, sweep)), "ZXY");
+  for (const m of logo.userData.materials) m.envMapRotation.set(envEuler.x, envEuler.y, envEuler.z, "YXZ");
 
   // El escaparate brilla un poco más bajo el cursor (cuando ya se han encendido las luces).
   if (introDone) {
@@ -475,7 +503,6 @@ function frame(now) {
 }
 const tmpEuler = new THREE.Euler();
 const envEuler = new THREE.Euler();
-const ENV_SIGN = 1;
 const qFace = new THREE.Quaternion();
 const qView = new THREE.Quaternion();
 const qEnv = new THREE.Quaternion();
