@@ -52,6 +52,7 @@ startCountdown(document.getElementById("count"), DROP_DATE, { animated: !reduce 
 startCountdown(document.getElementById("mini"), DROP_DATE);
 createFeedbackStore({ endpoint: FEEDBACK_ENDPOINT }).then((store) => setupVoz(store, obra));
 document.getElementById("caption-open").addEventListener("click", () => goTo("obra"));
+document.getElementById("caption-title").textContent = `${obra.nombre}.`;
 
 // ---------- Escena 3D ----------
 const manager = new THREE.LoadingManager();
@@ -73,7 +74,9 @@ try {
     three.room = room;
     three.displays = room.displays;
     three.cloths = room.displays.flatMap((d) => d.garments.map((g) => ({ mesh: g.userData.cloth, piece: g.userData.piece, display: d })));
+    room.setIntro(99); // todo encendido para la foto de reflejos…
     captureReflections(stage, room, logo);
+    if (!reduce) room.setIntro(0); // …y a oscuras para la entrada
     buildLabels(room.displays);
     stage.renderer.compile(stage.scene, stage.camera);
     stage.renderer.render(stage.scene, stage.camera);
@@ -143,7 +146,8 @@ function buildLabels(displays) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "tag";
-    b.innerHTML = `<span>${d.obra.numero}</span><b>El conjunto · ${d.obra.edicion}</b><i aria-hidden="true">+</i>`;
+    b.innerHTML = `<span>${d.obra.numero}</span><b></b><i aria-hidden="true">+</i>`;
+    b.querySelector("b").textContent = `${d.obra.nombre} · ${d.obra.edicion}`;
     b.setAttribute("aria-label", `Ver la obra ${d.obra.numero} completa`);
     b.addEventListener("click", () => goTo("obra"));
     b.addEventListener("pointerenter", () => { controls.state.hold = true; });
@@ -161,12 +165,45 @@ const controls = createControls(three ? canvas : hero, {
   onTap: (x, y) => { const c = pick(x, y); if (c) dialog.open(c.piece.obra, c.piece.pieza); },
   onMove: (x, y) => {
     const c = pick(x, y);
-    if (c !== hovered) {
-      hovered = c;
-      canvas.style.cursor = c ? "pointer" : "";
-    }
+    hovered = c;
+    canvas.style.cursor = c ? "pointer" : hitLogo(x, y) ? "grab" : "";
   },
+  hitLogo: (x, y) => hitLogo(x, y),
+  onLogoDrag: (dx, dy) => spinLogo(dx, dy),
 });
+
+/* ---------- El símbolo gira 360° en cualquier dirección ----------
+   Descansa de frente, flotando. Cada pocos segundos da una vuelta completa
+   y vuelve a quedar de frente. Arrastrándolo se gira libremente hacia
+   cualquier lado; al soltarlo vuelve solo a su sitio. */
+const logoQ = new THREE.Quaternion();     // giro que le da la persona (se deshace solo)
+const spinVel = new THREE.Vector3();      // inercia del giro (eje × ángulo por fotograma)
+const qTmp = new THREE.Quaternion();
+const axisUp = new THREE.Vector3();
+const axisRight = new THREE.Vector3();
+let lastSpinAt = 0;
+
+function hitLogo(x, y) {
+  if (!three?.logo.visible) return false;
+  ndc.set((x / canvas.clientWidth) * 2 - 1, -(y / canvas.clientHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, three.camera);
+  return raycaster.intersectObject(three.logo, true).length > 0;
+}
+function spinLogo(dx, dy) {
+  // Arrastrar en horizontal gira alrededor del eje vertical de la vista;
+  // en vertical, alrededor del eje horizontal (vuelta de campana).
+  axisUp.set(0, 1, 0).applyQuaternion(three.camera.quaternion);
+  axisRight.set(1, 0, 0).applyQuaternion(three.camera.quaternion);
+  spinVel.copy(axisUp).multiplyScalar(dx * 7).addScaledVector(axisRight, dy * 7);
+  applySpin(spinVel);
+  lastSpinAt = performance.now();
+}
+function applySpin(v) {
+  const angle = v.length();
+  if (angle < 1e-6) return;
+  qTmp.setFromAxisAngle(axisUp.copy(v).divideScalar(angle), angle);
+  logoQ.premultiply(qTmp).normalize();
+}
 document.getElementById("turn-left").addEventListener("click", () => controls.turn(-1));
 document.getElementById("turn-right").addEventListener("click", () => controls.turn(1));
 
@@ -232,14 +269,14 @@ const tmp2 = new THREE.Vector3();
 
 function computeCamera(yaw, pitch, p) {
   const port = portrait();
-  const D = port ? 3.4 : 3.3;
-  L.set(0, port ? 2.5 : 1.66, 0);
-  const camY = port ? 1.72 : 1.66; // a la altura del logo: sin cantos asomando por encima
+  const D = port ? 4.6 : 4.2;   // la cámara lejos: el símbolo flota en mitad de la sala
+  L.set(0, 1.95, 0);
+  const camY = 1.85;
   // Órbita: detrás del logo, mirando hacia él (y a la pared que hay detrás).
   camOrbit.copy(L).addScaledVector(dir(yaw, tmp), -D);
   camOrbit.y = camY;
   // Mirada base hacia el logo (en vertical, algo más abajo: el escaparate se ve debajo).
-  lookOrbit.set(L.x, port ? 1.8 : L.y - 0.1, L.z);
+  lookOrbit.set(L.x, L.y - (port ? 0.15 : 0.05), L.z);
   // Mirar arriba y abajo: giramos la dirección de la mirada.
   const v = tmp2.subVectors(lookOrbit, camOrbit);
   const horiz = Math.hypot(v.x, v.z);
@@ -259,14 +296,14 @@ function computeCamera(yaw, pitch, p) {
     return;
   }
   const a = main.angle;
-  camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 0.85 : 1.45);
-  camFinal.y = 1.62;
+  camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 1.7 : 2.3);
+  camFinal.y = 1.74;
   lookFinal.copy(main.focus);
   // Curva que pasa por un lado del logo (nunca lo atraviesa).
   const side = tmp.set(Math.cos(a), 0, Math.sin(a));
   const sign = Math.sign(side.dot(camOrbit)) || 1;
-  ctrl.copy(side).multiplyScalar(2.2 * sign);
-  ctrl.y = 1.9;
+  ctrl.copy(side).multiplyScalar(2.6 * sign);
+  ctrl.y = 2.2;
   const s = smooth(0, 1, p);
   const u = 1 - s;
   camPos.set(
@@ -278,42 +315,68 @@ function computeCamera(yaw, pitch, p) {
 }
 
 // ---------- Animación ----------
-let hitAt = -1;
+// Entrada inmersiva: tras el corte a negro, la sala está a oscuras; las luces se
+// encienden en secuencia mientras la cámara baja desde el techo, y el símbolo
+// aparece al final con su frenazo seco.
+const LOGO_AT = 2.0;   // segundos hasta que aparece el símbolo
+const CAM_IN = 3.2;    // segundos que dura la bajada de la cámara
+let introStart = -1;
+let introDone = false;
 let last = performance.now();
 let currentYaw = null;
+const introFrom = new THREE.Vector3();
+const introLook = new THREE.Vector3();
+const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
 
 function frame(now) {
   requestAnimationFrame(frame);
-  if (!three || hitAt < 0 || !controls.state.visible) { last = now; return; }
+  if (!three || introStart < 0 || !controls.state.visible) { last = now; return; }
   const { renderer, scene, camera, logo, room } = three;
   const s = controls.state;
   const f = Math.min(4, (now - last) / (1000 / 60));
   last = now;
   const t = now / 1000;
+  const it = reduce ? 99 : (now - introStart) / 1000;
 
-  // Giro: inercia, saltos de escaparate, deriva lentísima en reposo.
-  if (!s.dragging) {
+  // Luces de la entrada.
+  if (!introDone && room) {
+    introDone = room.setIntro(it);
+    if (introDone) onIntroDone();
+  }
+
+  // Giro de la sala: inercia, saltos de escaparate, deriva lentísima en reposo.
+  if (!s.dragging || s.mode === "logo") {
     if (s.goal !== null) {
       s.yaw += (s.goal - s.yaw) * (1 - Math.pow(0.88, f));
       if (Math.abs(s.goal - s.yaw) < 0.0005) { s.yaw = s.goal; s.goal = null; }
     } else {
       s.yaw += s.vel * f;
       s.vel *= Math.pow(0.93, f);
-      if (!reduce && !s.hold && heroP < 0.02 && now - s.idleSince > 4500) s.yaw += 0.0004 * f;
+      if (!reduce && !s.hold && heroP < 0.02 && now - s.idleSince > 4500) s.yaw += 0.0003 * f;
     }
     s.pitch += s.pvel * f;
     s.pvel *= Math.pow(0.9, f);
-    // Tras unos segundos sin tocar, la mirada vuelve suave al horizonte.
     if (now - s.idleSince > 2500) s.pitch += (0 - s.pitch) * (1 - Math.pow(0.97, f));
   }
   const yawTarget = baseYaw() + s.yaw;
   currentYaw = currentYaw === null ? yawTarget : currentYaw + (yawTarget - currentYaw) * (1 - Math.pow(0.8, f));
   computeCamera(currentYaw, s.pitch * (1 - heroP), heroP);
 
-  // Entrada: el logo llega grande y girado y frena en seco, con sacudida.
+  // Bajada de la cámara en la entrada: de cerca del techo, mirando abajo, a su sitio.
+  if (it < CAM_IN) {
+    const e = easeOutCubic(Math.min(1, it / CAM_IN));
+    introFrom.copy(camPos).multiplyScalar(0.45);
+    introFrom.y = 3.6;
+    introLook.set(L.x, 0.2, L.z);
+    camPos.lerpVectors(introFrom, camPos, e);
+    camLook.lerpVectors(introLook, camLook, e);
+  }
+
+  // El símbolo aparece con su frenazo seco y una pequeña sacudida.
+  logo.visible = it >= LOGO_AT;
   let k = 1, shake = 0;
-  if (!reduce) {
-    const ms = now - hitAt;
+  if (!reduce && it >= LOGO_AT) {
+    const ms = (it - LOGO_AT) * 1000;
     k = easeOutExpo(Math.min(1, ms / 900));
     shake = ms < 380 ? (1 - ms / 380) * 0.035 : 0;
   }
@@ -322,29 +385,61 @@ function frame(now) {
   camera.position.copy(camPos);
   camera.lookAt(camLook);
 
-  // Logo: siempre de frente a la cámara, grande y llamativo.
-  const visW = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect * (portrait() ? 3.4 : 3.3);
-  const width = (portrait() ? 0.84 : 0.47) * visW;
+  // Giro del símbolo: inercia del arrastre y, al soltarlo, vuelta suave de frente.
+  if (!(s.dragging && s.mode === "logo")) {
+    applySpin(spinVel);
+    spinVel.multiplyScalar(Math.pow(0.94, f));
+    if (now - lastSpinAt > 1800) logoQ.slerp(qIdentity, 1 - Math.pow(0.96, f));
+  }
+  // Vuelta completa automática cada pocos segundos, mientras nadie lo toca.
+  if (!reduce && introDone && heroP < 0.05) {
+    if (autoSpin.start < 0 && now > autoSpin.next && now - lastSpinAt > 4000 && !s.dragging) autoSpin.start = now;
+    if (autoSpin.start >= 0) {
+      const pr = Math.min(1, (now - autoSpin.start) / 2600);
+      autoSpin.angle = Math.PI * 2 * (pr < 0.5 ? 4 * pr * pr * pr : 1 - Math.pow(-2 * pr + 2, 3) / 2);
+      if (pr >= 1) { autoSpin.start = -1; autoSpin.angle = 0; autoSpin.next = now + 9000; }
+    }
+  }
+
+  // Tamaño: más pequeño, flotando en el centro de la sala.
+  const D = portrait() ? 4.6 : 4.2;
+  const visW = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect * D;
+  const width = (portrait() ? 0.66 : 0.33) * visW;
   logo.position.copy(L);
-  logo.position.y += reduce ? 0 : Math.sin(t * 0.9) * 0.012;
-  logo.scale.setScalar((width / 10) * (1 + (1 - k) * 0.5));
+  logo.position.y += reduce ? 0 : Math.sin(t * 0.9) * 0.02;
+  logo.scale.setScalar((width / 10) * (1 + (1 - k) * 0.6));
+  // Orientación final = giro de la persona × de frente a la cámara × vuelta automática.
   const face = Math.atan2(camera.position.x - L.x, camera.position.z - L.z);
-  logo.rotation.set((1 - k) * 0.25 - s.py * 0.04, face + s.px * 0.1 + (1 - k) * -0.8, 0);
-  // Un barrido de luz lento recorre el metal: el logo nunca está quieto del todo.
+  qFace.setFromEuler(tmpEuler.set((1 - k) * 0.4, face + autoSpin.angle + (1 - k) * -1.2, 0, "YXZ"));
+  logo.quaternion.copy(logoQ).multiply(qFace);
+  // Los reflejos de estudio acompañan a la cámara, con un barrido de luz lento.
   const sweep = reduce ? 0 : Math.sin(t * 0.35) * 0.45;
   for (const m of logo.userData.materials) m.envMapRotation.set(0, face + sweep, 0);
 
-  // El escaparate brilla un poco más bajo el cursor.
-  for (const d of three.displays) {
-    const on = hovered && hovered.display === d;
-    const base = d === three.displays[0] ? 15 : 10;
-    d.spot.intensity += ((on ? base * 1.5 : base) - d.spot.intensity) * 0.15;
+  // El escaparate brilla un poco más bajo el cursor (cuando ya se han encendido las luces).
+  if (introDone) {
+    for (const d of three.displays) {
+      const on = hovered && hovered.display === d;
+      const base = d === three.displays[0] ? 16 : 10;
+      d.spot.intensity += ((on ? base * 1.4 : base) - d.spot.intensity) * 0.15;
+    }
   }
   room?.update(t);
   renderer.render(scene, camera);
   placeLabels();
 }
+const tmpEuler = new THREE.Euler();
+const qFace = new THREE.Quaternion();
+const qIdentity = new THREE.Quaternion();
+const autoSpin = { start: -1, angle: 0, next: 0 };
 requestAnimationFrame(frame);
+
+function onIntroDone() {
+  controls.state.enabled = true;
+  autoSpin.next = performance.now() + 2500; // la primera vuelta, poco después de entrar
+  hint.classList.add("show");
+  setTimeout(() => { if (!document.body.classList.contains("exploring")) hint.classList.remove("show"); }, 5000);
+}
 
 /* Coloca cada etiqueta sobre su escaparate. Se ocultan si el escaparate
    no está de frente o si quedarían encima del logo. */
@@ -399,17 +494,11 @@ runIntro({
   reduce,
   onReveal() {
     if (three) canvas.style.visibility = "visible";
-    hitAt = performance.now();
+    introStart = performance.now();
     document.body.classList.remove("is-loading");
     document.body.classList.add("revealed");
     setupReveal();
     requestAnimationFrame(() => document.body.classList.add("entered"));
-    setTimeout(() => {
-      controls.state.enabled = true;
-      if (three) {
-        hint.classList.add("show");
-        setTimeout(() => { if (!document.body.classList.contains("exploring")) hint.classList.remove("show"); }, 5000);
-      }
-    }, reduce ? 0 : 700);
+    if (!three) controls.state.enabled = true;
   },
 });

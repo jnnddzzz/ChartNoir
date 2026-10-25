@@ -13,7 +13,7 @@ const el = (tag, props = {}, ...children) => {
 /* ---------- Obra destacada ---------- */
 export function renderObra(obra, { onOpen }) {
   const values = {
-    numero: `Obra ${obra.numero}`,
+    numero: `Obra ${obra.numero} · ${obra.nombre}`,
     "numero-corto": obra.numero,
     edicion: obra.edicion,
     talla: obra.talla,

@@ -142,3 +142,21 @@ export function plaqueTexture(lines) {
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   return t;
 }
+
+/** Panel retroiluminado: blanco suave en el centro que se apaga hacia los bordes.
+    Es la luz que hay detrás del conjunto, como en una caja de luz de museo. */
+export function haloTexture(size = 512) {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const g = c.getContext("2d");
+  const grad = g.createRadialGradient(size / 2, size * 0.46, 0, size / 2, size * 0.5, size * 0.52);
+  grad.addColorStop(0, "#f4f4f6");
+  grad.addColorStop(0.35, "#8d8f94");
+  grad.addColorStop(0.7, "#1c1d20");
+  grad.addColorStop(1, "#000000");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}

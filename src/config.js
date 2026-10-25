@@ -36,7 +36,7 @@ export const OBRAS = [
   {
     id: "obra-001",
     numero: "001",
-    nombre: "Toile",
+    nombre: "Génesis", // el nombre de la obra: la primera, el origen de todo
     edicion: "1/1",
     talla: "M",
     titular: "Mi primera obra de arte.",

@@ -1,7 +1,8 @@
 /* =========================================================
    Controles del vestidor (vista 360°):
-   - arrastrar gira la sala alrededor del logo (horizontal) y
-     deja mirar arriba y abajo, al techo y al suelo (vertical);
+   - arrastrar sobre el símbolo lo gira 360° en cualquier dirección;
+   - arrastrar fuera de él gira la sala alrededor del símbolo (horizontal)
+     y deja mirar arriba y abajo, al techo y al suelo (vertical);
    - flechas del teclado y botones ‹ › giran de escaparate en escaparate;
    - un toque sin arrastrar es un "clic" sobre la escena (elegir prenda);
    - en pantallas táctiles el dedo en vertical hace scroll, salvo en
@@ -11,12 +12,13 @@
 export const PITCH_MIN = -0.95; // mirar al suelo
 export const PITCH_MAX = 0.95;  // mirar al techo
 
-export function createControls(canvas, { step, onTap, onMove, onInteract }) {
+export function createControls(canvas, { step, onTap, onMove, onInteract, hitLogo, onLogoDrag }) {
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const state = {
     enabled: false,
     visible: true,
     dragging: false,
+    mode: "room",      // "room" (gira la sala) o "logo" (gira el símbolo)
     explore: !coarse,  // con ratón siempre; en táctil, solo en modo 360°
     yaw: 0, pitch: 0,  // giro añadido por la persona (radianes)
     vel: 0, pvel: 0,   // inercia
@@ -33,6 +35,8 @@ export function createControls(canvas, { step, onTap, onMove, onInteract }) {
   canvas.addEventListener("pointerdown", (e) => {
     if (!state.enabled) return;
     state.dragging = true;
+    const r0 = canvas.getBoundingClientRect();
+    state.mode = hitLogo?.(e.clientX - r0.left, e.clientY - r0.top) ? "logo" : "room";
     moved = false;
     startX = lastX = e.clientX;
     startY = lastY = e.clientY;
@@ -56,6 +60,11 @@ export function createControls(canvas, { step, onTap, onMove, onInteract }) {
     lastX = e.clientX;
     lastY = e.clientY;
     if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 6) moved = true;
+    if (state.mode === "logo") {
+      onLogoDrag?.(dx / Math.max(320, r.width), state.explore ? dy / Math.max(320, r.width) : 0);
+      state.idleSince = performance.now();
+      return;
+    }
     // Arrastrar hacia un lado mueve la sala hacia ese lado (como agarrarla).
     const k = 2.6 / Math.max(320, r.width);
     state.vel = -dx * k;

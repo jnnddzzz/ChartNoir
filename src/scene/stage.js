@@ -56,8 +56,9 @@ function createStudioReflections(renderer) {
     [soft, 22, 4, 0, -2.5, 8],       // relleno bajo: degradado metálico
     [white, 0.5, 9, -7, 2, 2],       // tiras verticales laterales: filos nítidos
     [white, 0.5, 9, 7, 2, 2],
-    [soft, 6, 10, -9, 0, -2],        // rellenos laterales neutros
-    [soft, 6, 10, 9, 0, -2],
+    [white, 4, 10, -9, 0, -2],       // laterales blancos: brilla también cuando gira de canto
+    [white, 4, 10, 9, 0, -2],
+    [soft, 18, 3, 0, 1.5, -9],       // fondo: la cara trasera también se ve plateada
     [dark, 20, 6, 0, -6, 2],         // suelo oscuro: contraste en la parte baja
   ];
   for (const [m, w, h, x, y, z] of panels) {

@@ -13,18 +13,21 @@ Marca española de streetwear fundada por Jano. Concepto: un club privado noctur
 - Redes principales: Instagram y TikTok (ahora mismo, la cuenta personal @jjn.dzz).
 - La música ya **no** aparece en la web: Jano decidió que no tiene que ver con la marca.
 
-## Fase actual: el vestidor circular (25/10/2026, tercera versión)
+## Fase actual: el vestidor circular (25/10/2026, cuarta versión)
 
 Una sola página con scroll. Estilo **minimalista, moderno, urbano, futurista, limpio y con mucha clase**, con animaciones al hacer scroll. Jano irá añadiendo más obras, fotos e información.
 
 0. **Pantalla de carga**: número 000 → 100 (avance irregular, nunca por delante de lo descargado) y barra granate fina. Al llegar a 100: corte seco a negro (~300 ms), destello blanco breve y entrada.
-1. **Portada 3D: vestidor circular (tercera versión, 25/10/2026).** Referencia de Jano: blurboys.com (sala circular tipo cámara acorazada, logo fijo en el centro, la sala gira a su alrededor). Combina las dos versiones anteriores: la sala circular que gira alrededor del logo + el recorrido de cámara de la primera (al bajar, la cámara viaja hasta el escaparate).
-   - **Vista 360° en todas direcciones**: arrastrar gira la sala alrededor del logo y deja mirar arriba (techo) y abajo (suelo). Con ratón, siempre; en táctil, con el botón **360°** (el dedo mira libremente y se bloquea el scroll; "Salir del 360°" vuelve). Fuera de ese modo, el dedo en horizontal gira y en vertical hace scroll. ‹ › y flechas del teclado saltan de escaparate. En reposo, deriva lenta y la mirada vuelve al horizonte.
-   - **Escaparate principal (módulo 0)**: el **conjunto completo** de la Obra 001 colgado como se lleva puesto (chaleco arriba, pantalón debajo, cada uno de su soporte cromado), foco con **sombras reales**, fondo de roble ahumado acanalado, tiras de luz en los cantos, marco de acero, peana de mármol y placa grabada "OBRA 001 · 1/1 · TALLA M".
-   - Resto de hornacinas: biblioteca de telas (baldas de roble con telas dobladas en los colores de la marca) hasta que lleguen nuevas obras. Armarios de laca **acanalada** con tiradores cromados y haces de luz.
-   - **Suelo** de mármol negro con vetas, aros y líneas radiales de acero, y charco de luz bajo el logo. **Techo** artesonado: anillo de luz, vigas radiales, focos empotrados y lámpara central de anillos concéntricos de luz y acero.
-   - Etiqueta flotante por escaparate ("001 · El conjunto · 1/1 +", lleva a la sección Obra); nunca se pinta encima del logo. Tocar una prenda abre su ficha.
-   - Al final del recorrido: "Obra 001 · 1/1 · Talla M — El conjunto." + "Verlo de cerca". Abajo en la portada: cuenta atrás, ‹ ›, "Ver Obra 001" y 360° (táctil).
+1. **Portada 3D: vestidor circular (cuarta versión, 25/10/2026 — Jano: "se adapta casi 100%").** Referencia: blurboys.com (sala circular, logo fijo en el centro, la sala gira a su alrededor). Sala circular + recorrido de cámara de la primera versión (al bajar, la cámara viaja hasta el escaparate).
+   - **Entrada inmersiva**: tras el corte a negro la sala está a oscuras; las luces se encienden en secuencia con un parpadeo seco (anillo del techo, juntas recorriendo la sala, columnas y halo del escaparate, focos, lámpara, charco de luz) mientras la cámara baja desde el techo; el símbolo aparece al final con su frenazo seco.
+   - **El símbolo**: más pequeño (~33 % del ancho en horizontal, ~66 % en vertical), flotando en el centro de la sala (cámara a 4,2 m). Descansa de frente; **cada ~9 s da una vuelta completa de 360°**; arrastrándolo se gira libremente **en cualquier dirección** y al soltarlo vuelve solo de frente.
+   - **Vista 360°**: arrastrar fuera del símbolo gira la sala y deja mirar al techo y al suelo (táctil: botón **360°**). ‹ › y flechas saltan de escaparate. En reposo, deriva lenta y la mirada vuelve al horizonte.
+   - **Sala majestuosa**: 5 m de radio y 4,2 m de alto; pilastras acanaladas con capitel y basa de acero y línea de luz empotrada entre módulos.
+   - **Escaparate principal (módulo 0)**: el conjunto colgado como se lleva puesto de una **barra de luz** (tubo de acero con línea luminosa), delante de un **halo retroiluminado** (caja de luz de museo), entre **dos columnas de luz**, con foco con sombras reales y dos luces laterales; fondo de roble acanalado, marco de acero, peana de mármol y placa "OBRA 001 · GÉNESIS / 1/1 · TALLA M".
+   - Resto de hornacinas: biblioteca de telas (baldas de roble con línea de luz y telas dobladas) hasta que lleguen nuevas obras. Armarios de laca acanalada con tiradores cromados y haces de luz.
+   - **Suelo** de mármol negro con vetas, aros y líneas radiales de acero y charco de luz bajo el símbolo. **Techo** artesonado con anillo de luz, vigas, focos y lámpara central de anillos escalonados.
+   - Etiqueta flotante por escaparate ("001 · Génesis · 1/1 +"); nunca encima del símbolo. Tocar una prenda abre su ficha.
+   - Al final del recorrido: "Obra 001 · 1/1 · Talla M · Chaleco y pantalón — **Génesis.**" + "Verlo de cerca".
 2. **Obra 001**: "Mi primera obra de arte." · 1/1 · Talla M. El conjunto aparece montado (fotos de estudio, simétricas) y **se separa al hacer scroll** en chaleco y pantalón. Cada pieza abre su ficha: foto, 1/1, talla, resumen, detalles, medidas en plano, "Pedir por Instagram", "Pujar por esta obra" y "Ver la otra pieza".
 3. **Tu voz**: puja ("¿Cuánto pagarías?", cantidad + nombre y contacto opcionales) y opinión ("¿Lo recomendarías?" 1-5 + texto + nombre opcional). Las respuestas quedan registradas (ver Decisiones). El dueño ve un panel privado con todas las respuestas.
 4. **El taller**: hecho a mano · telas elegidas una a una · hecho para durar, con fotos del proceso (patrón del pantalón, espalda del chaleco).
@@ -33,6 +36,7 @@ Una sola página con scroll. Estilo **minimalista, moderno, urbano, futurista, l
 Cuenta atrás: fecha provisional 1 de diciembre de 2026, 00:00 hora de España, en `src/config.js`.
 
 ### Datos de la Obra 001 (dados por Jano el 24/10/2026)
+- Nombre: **Génesis** (propuesto el 25/10/2026 porque Jano no quería "El conjunto": es su primera obra, el origen). Cambiable en `src/config.js`.
 - Talla M. **Chaleco cropped**; **pantalón baggy**. Guardan la forma y están **doblemente forrados**.
 - El pantalón tiene **dobles bolsillos delanteros** y **tiras tipo pantalón carpintero** que mantienen su estructura.
 - Medidas: **inventadas provisionalmente** a petición de Jano (en `src/config.js`); sustituir por las reales cuando las dé.
@@ -45,6 +49,8 @@ Cuenta atrás: fecha provisional 1 de diciembre de 2026, 00:00 hora de España, 
 - Logo apagado o gris (segunda versión): tiene que ser llamativo y luminoso.
 - Letras de los cantos superpuestas detrás del logo.
 - Sala que no deja mirar 360° (arriba/abajo), interior de armario pobre, y exponer solo una pieza: el conjunto se expone completo.
+- Llamar "El conjunto" a la obra: usar su nombre (Génesis).
+- Símbolo girando sin parar (de canto se ve oscuro): descansa de frente y da vueltas completas de vez en cuando.
 - Prendas como recortes planos colgados ("se ve muy cutre"): siempre en 3D, con volumen, textura y percha realista.
 - Fotos de producto torcidas o con fondo: siempre recortadas, rectas, simétricas y con la luz igualada, como de estudio.
 - Tipografías serif para los números (Bodoni), Michroma, o cursivas tipo Cormorant en la web.
@@ -74,7 +80,7 @@ Tipografía: **Archivo** (Google Fonts, variable), una sola familia.
 Logo 3D:
 - **Llamativo** (Jano prefiere el de la primera versión): plata pulida y luminosa (softboxes blancas potentes, filos blancos), cantos del monograma en plata y cantos de "CHART NOIR" en **granate intenso**. Reflejos de estudio sin paneles de color. Un barrido de luz lento recorre el metal. El plató de reflejos gira con el logo.
 - **Poca profundidad** (letras 0.26, monograma 0.4 sobre 10 de ancho) y cámara a la altura del logo: de frente solo se ve la cara plateada con un filo granate; los cantos no asoman como "letras fantasma" detrás (Jano lo rechazó).
-- El logo mira siempre a la cámara y ocupa ~47 % del ancho en horizontal y ~84 % en vertical (en móvil va arriba y el conjunto se ve debajo).
+- Tamaño y movimiento: ver "Portada" (pequeño, flotando en el centro, vueltas de 360°, se gira arrastrándolo). Los reflejos tienen laterales y fondo claros para que brille también de canto y por detrás.
 - `assets/logo-shapes.json` contiene el logo trazado a vectores (`t:1` = letras, `t:0` = monograma). Si Jano aporta un SVG vectorizado profesional, sustituir el trazado por ese SVG (SVGLoader de Three.js).
 
 Voz de marca: frases cortas, frías, enigmáticas. Sin emojis alegres ni exclamaciones. Ejemplos: "Los que estaban, lo saben." "No es para todos. Nunca lo fue." "Hecho a mano. Una sola vez."
