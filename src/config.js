@@ -17,7 +17,7 @@ export const REDES = {
 // Pega aquí la dirección de tu Google Apps Script (ver scripts/google-sheets.gs).
 // Vacío = los formularios avisan de que estarán disponibles muy pronto.
 // (En la vista previa de Claude se guardan solas, sin configurar nada.)
-export const FEEDBACK_ENDPOINT = "";
+export const FEEDBACK_ENDPOINT = "https://script.google.com/macros/s/AKfycbztE_JzXaXp5dWWblP8xSR3FW_IPoVyUU-KAd1hQYWX5XEVHuNMDMbNAvm2P3MtjAab/exec";
 
 /* ---------------------------------------------------------
    OBRAS (prendas)
