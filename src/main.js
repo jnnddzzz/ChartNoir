@@ -71,8 +71,8 @@ try {
     Promise.all(["500 46px Archivo", "600 62px Archivo", "400 30px Archivo"].map((f) => document.fonts?.load(f))).catch(() => {}),
     new Promise((r) => setTimeout(r, 2500)),
   ]);
-  sceneReady = Promise.all([loadPieces(manager), loadPhotos(manager), fontFor3D]).then(([pieces, photos]) => {
-    const room = createRoom({ obras: OBRAS, pieces, photos });
+  sceneReady = Promise.all([loadPieces(manager), loadPhotos(manager), loadFabrics(manager), fontFor3D]).then(([pieces, photos, fabrics]) => {
+    const room = createRoom({ obras: OBRAS, pieces, photos, fabrics });
     stage.scene.add(room.group);
     three.room = room;
     three.displays = room.displays;
@@ -111,6 +111,19 @@ function loadPieces(mgr) {
     }
   }
   return Promise.all(jobs).then((list) => list.filter(Boolean));
+}
+
+/* La tela de cada obra, fotografiada de cerca: viste los costados de las prendas 3D. */
+function loadFabrics(mgr) {
+  const loader = new THREE.TextureLoader(mgr);
+  const fabrics = new Map();
+  return Promise.all(OBRAS.filter((o) => o.tela).map((o) => new Promise((res) => loader.load(o.tela, (t) => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = 8;
+    fabrics.set(o.id, t);
+    res();
+  }, undefined, () => res())))).then(() => fabrics);
 }
 
 /* Las fotos del proceso, para enmarcarlas en la pared del taller. */

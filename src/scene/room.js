@@ -45,7 +45,7 @@ const FRIEZE = [
   "OBRAS ÚNICAS · 1/1", "LOS QUE ESTABAN, LO SABEN", "NO ES PARA TODOS", "CHART NOIR",
 ];
 
-export function createRoom({ obras, pieces, photos = [] }) {
+export function createRoom({ obras, pieces, photos = [], fabrics = new Map() }) {
   const group = new THREE.Group();
   const reflective = [];
   const power = []; // luces que se encienden en la entrada: { delay, set(v) }
@@ -258,7 +258,7 @@ export function createRoom({ obras, pieces, photos = [] }) {
       buildWardrobe(bay, M, i);
     } else if (used.has(i)) {
       const obra = used.get(i);
-      const d = buildShowcase(bay, M, obra, piecesByObra.get(obra.id) || [], i === 0);
+      const d = buildShowcase(bay, M, obra, piecesByObra.get(obra.id) || [], i === 0, fabrics);
       displays.push({ ...d, obra, angle: bayAngle(i), bay });
       if (i === 0) buildMuseumFront(bay, M, obra);
     } else if (i === 6 && photos.length) {
@@ -360,7 +360,7 @@ function buildNicheShell(bay, m, size, delay, { coves = true } = {}) {
 
 /* Escaparate de una obra: el conjunto en 3D, "puesto" (maniquí invisible),
    flotando delante de un halo retroiluminado. Puede girar 360° (spin). */
-function buildShowcase(bay, m, obra, pieces, main) {
+function buildShowcase(bay, m, obra, pieces, main, fabrics) {
   const size = main ? SHOWCASE : NICHE;
   const delay = main ? 1.3 : 1.6;
   // El escaparate principal no lleva tiras en los cantos: ya tiene halo y columnas de luz.
@@ -378,7 +378,7 @@ function buildShowcase(bay, m, obra, pieces, main) {
   halo.position.set(0, size.y0 + size.h / 2 + 0.05, zBack + 0.012);
   bay.add(halo);
 
-  const outfit = createWornOutfit(pieces, main ? 1.9 : 1.6);
+  const outfit = createWornOutfit(pieces, main ? 1.9 : 1.6, fabrics?.get(obra.id));
   const float = new THREE.Group(); // sube y baja despacio
   float.position.set(0, CENTER_Y, rodZ);
   float.add(outfit.group);
