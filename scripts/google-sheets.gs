@@ -35,3 +35,8 @@ function doPost(e) {
 
   return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
 }
+
+// Al abrir la URL /exec en el navegador: comprobación rápida de que el registro está activo.
+function doGet() {
+  return ContentService.createTextOutput("Chart Noir · registro activo");
+}

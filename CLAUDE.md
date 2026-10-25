@@ -104,6 +104,7 @@ Voz de marca: frases cortas, frías, enigmáticas. Sin emojis alegres ni exclama
 
 Registro de decisiones. Añadir aquí cada nueva decisión de marca o de diseño.
 
+- **Publicación** (25/10/2026): la web pública está en **GitHub Pages**, https://jnnddzzz.github.io/ChartNoir/ (repositorio público `jnnddzzz/ChartNoir`). Se publica sola en cada subida a `main` (`.github/workflows/web.yml`). Dominio propio (ej. chartnoir.com): pendiente de que Jano lo compre; entonces se añade `public/CNAME` y se cambian `og:url`/`og:image` en `index.html`. Registro de pujas y opiniones: hoja de Google "Chart Noir · Respuestas" en el Drive de Jano + `scripts/google-sheets.gs`; la URL /exec va en `FEEDBACK_ENDPOINT`.
 - **Estructura**: proyecto Vite en la raíz del repositorio `jnnddzzz/chartnoir`. (La versión solo-web-cerrada queda en `mi-portfolio/chart-noir-web`.)
 - **Obras en `src/config.js`**: cada obra tiene talla y sus piezas (foto, ancho real, tipo de percha, resumen, detalles, medidas y "caja" dentro del conjunto). Cada pieza se cuelga sola en una hornacina, en orden (las dos primeras a cada lado del logo al empezar).
 - **Fotos de producto "de estudio"**: fondo quitado con rembg/BiRefNet; después se enderezan, el contorno se hace simétrico (intersección con su espejo: la tela de dentro es la real, solo se recortan bordes) y se iguala la luz y el balance de blancos (crudo limpio). Script: `scripts/foto-estudio.py` (instrucciones dentro); Claude lo repite con cada foto nueva. El pantalón usa la foto frontal nueva (se ven los bolsillos).
