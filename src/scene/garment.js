@@ -204,3 +204,191 @@ export function createGarment(piece, chrome) {
   group.userData = { cloth, swing, shadow, piece };
   return group;
 }
+
+/* =========================================================
+   El conjunto "puesto", flotando (maniquí invisible):
+   cada pieza es un volumen cerrado, delante y detrás, que sale
+   de la silueta de su foto: en cada altura se mide el ancho de
+   la tela (y en el pantalón, cada pernera por separado) y se le
+   da una sección redondeada, como un cuerpo dentro de la prenda.
+   Así se puede girar 360°. Por dentro, el forro en negro.
+   ========================================================= */
+
+/** Profundidad (mitad del grosor) de la prenda en cada punto de la rejilla. */
+function bodyDepth(image, GX, GY, width) {
+  const c = document.createElement("canvas");
+  c.width = GX + 1;
+  c.height = GY + 1;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(image, 0, 0, GX + 1, GY + 1);
+  const a = g.getImageData(0, 0, GX + 1, GY + 1).data;
+  const W = GX + 1;
+  const depth = new Float32Array(W * (GY + 1));
+  const mask = new Uint8Array(W * (GY + 1));
+  const cell = width / GX;
+  const cap = 0.17 * width; // un torso no es más hondo que esto
+  for (let y = 0; y <= GY; y++) {
+    let x = 0;
+    while (x <= GX) {
+      if (a[(y * W + x) * 4 + 3] < 110) { x++; continue; }
+      const x0 = x;
+      while (x <= GX && a[(y * W + x) * 4 + 3] >= 110) x++;
+      const x1 = x - 1;
+      // Tramo de tela: sección redondeada de lado a lado.
+      const c0 = (x0 + x1) / 2;
+      const hw = Math.max(0.5, (x1 - x0) / 2 + 0.5);
+      const D = Math.min(hw * cell * 0.9, cap);
+      for (let k = x0; k <= x1; k++) {
+        const t = Math.min(1, Math.abs(k - c0) / hw);
+        depth[y * W + k] = D * Math.sqrt(1 - t * t);
+        mask[y * W + k] = 1;
+      }
+    }
+  }
+  // Suavizado en vertical y horizontal (solo dentro de la tela): sin escalones.
+  const tmp = new Float32Array(depth.length);
+  for (let pass = 0; pass < 3; pass++) {
+    for (let y = 0; y <= GY; y++) {
+      for (let x = 0; x <= GX; x++) {
+        const i = y * W + x;
+        if (!mask[i]) { tmp[i] = 0; continue; }
+        let s = 0, n = 0;
+        for (let dy = -2; dy <= 2; dy++) {
+          const yy = y + dy;
+          if (yy < 0 || yy > GY) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx;
+            if (xx < 0 || xx > GX || !mask[yy * W + xx]) continue;
+            s += depth[yy * W + xx]; n++;
+          }
+        }
+        tmp[i] = s / n;
+      }
+    }
+    depth.set(tmp);
+  }
+  // Distancia (en celdas) de cada punto al borde de la tela: cerca del contorno la
+  // prenda se afina hasta cero, para que delante y detrás se cierren sin huecos.
+  const dist = new Float32Array(depth.length);
+  for (let i = 0; i < dist.length; i++) dist[i] = mask[i] ? 1e4 : 0;
+  const relax = (i, j, c) => { if (dist[j] + c < dist[i]) dist[i] = dist[j] + c; };
+  for (let y = 0; y <= GY; y++) for (let x = 0; x <= GX; x++) {
+    const i = y * W + x;
+    if (x > 0) relax(i, i - 1, 1);
+    if (y > 0) { relax(i, i - W, 1); if (x > 0) relax(i, i - W - 1, 1.41); if (x < GX) relax(i, i - W + 1, 1.41); }
+  }
+  for (let y = GY; y >= 0; y--) for (let x = GX; x >= 0; x--) {
+    const i = y * W + x;
+    if (x < GX) relax(i, i + 1, 1);
+    if (y < GY) { relax(i, i + W, 1); if (x < GX) relax(i, i + W + 1, 1.41); if (x > 0) relax(i, i + W - 1, 1.41); }
+  }
+  for (let i = 0; i < depth.length; i++) {
+    const e = Math.min(1, Math.max(0, (dist[i] - 2.5) / 5));
+    depth[i] *= Math.sqrt(e * (2 - e)); // curva redonda, no un escalón
+  }
+  return depth;
+}
+
+/** Malla cerrada: la cara de delante (z > 0) y la de detrás (z < 0) se juntan en el contorno. */
+function wornGeometry(image, w, h) {
+  const GX = 110;
+  const GY = Math.max(40, Math.round(GX * (h / w)));
+  const depth = bodyDepth(image, GX, GY, w);
+  const W = GX + 1;
+  const n = W * (GY + 1);
+  const pos = new Float32Array(n * 2 * 3);
+  const uv = new Float32Array(n * 2 * 2);
+  for (let side = 0; side < 2; side++) {
+    for (let y = 0; y <= GY; y++) {
+      for (let x = 0; x <= GX; x++) {
+        const i = y * W + x;
+        const o = side * n + i;
+        const v = y / GY;
+        // Caída suave: la tela se mete un poco hacia dentro en el bajo.
+        const d = depth[i] * (1 - 0.08 * v);
+        pos[o * 3] = (x / GX - 0.5) * w;
+        pos[o * 3 + 1] = (0.5 - v) * h;
+        pos[o * 3 + 2] = side === 0 ? d : -d;
+        uv[o * 2] = x / GX;
+        uv[o * 2 + 1] = 1 - v;
+      }
+    }
+  }
+  const index = [];
+  for (let side = 0; side < 2; side++) {
+    for (let y = 0; y < GY; y++) {
+      for (let x = 0; x < GX; x++) {
+        const a = side * n + y * W + x, b = a + 1, c = a + W, d = c + 1;
+        if (side === 0) index.push(a, c, b, b, c, d);
+        else index.push(a, b, c, b, d, c);
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  geo.setIndex(index);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/** Una pieza "puesta": volumen de tela por fuera y forro negro por dentro. */
+function createWornPiece(piece, w, h) {
+  const g = new THREE.Group();
+  const geo = wornGeometry(piece.texture.image, w, h);
+  const normal = getWeaveNormal().clone();
+  normal.repeat.set(w * 70, h * 70);
+  normal.needsUpdate = true;
+  const outer = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
+    map: piece.texture,
+    color: 0xe6e3df,
+    alphaTest: 0.5,
+    alphaToCoverage: true,
+    side: THREE.FrontSide,
+    roughness: 0.86,
+    sheen: 0.35,
+    sheenRoughness: 0.6,
+    sheenColor: new THREE.Color(0xfff6ea),
+    normalMap: normal,
+    normalScale: new THREE.Vector2(0.45, 0.45),
+    envMapIntensity: 0.25,
+  }));
+  outer.castShadow = true;
+  outer.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: piece.texture, alphaTest: 0.5 });
+  // (polygonOffset: en el contorno, donde las dos caras se tocan, siempre gana la tela.)
+  const lining = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+    color: 0x1a1819, roughness: 0.7, map: piece.texture, alphaTest: 0.5, side: THREE.BackSide,
+    polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 8,
+  }));
+  lining.material.onBeforeCompile = (s) => {
+    // Forro liso: del mapa solo nos interesa el recorte (alfa), no el estampado.
+    s.fragmentShader = s.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\n diffuseColor.rgb = diffuse;");
+  };
+  g.add(outer, lining);
+  g.userData.cloth = outer;
+  return g;
+}
+
+/**
+ * El conjunto completo, montado como en la foto del conjunto (cada pieza en su "caja"),
+ * con una altura total `height`. Devuelve un grupo centrado en su origen.
+ * @param {Array} pieces  [{ texture, pieza: { caja }, obra: { proporcion } }]
+ */
+export function createWornOutfit(pieces, height) {
+  const group = new THREE.Group();
+  const parts = [];
+  const prop = pieces[0]?.obra.proporcion || 0.5;
+  const setH = height;
+  const setW = setH * prop;
+  for (const p of pieces) {
+    const box = p.pieza.caja || { x: 0, y: 0, w: 100, h: 100 };
+    const w = (box.w / 100) * setW;
+    const h = w * (p.texture.image.height / p.texture.image.width);
+    const part = createWornPiece(p, w, h);
+    part.position.set(((box.x + box.w / 2) / 100 - 0.5) * setW, (0.5 - (box.y + box.h / 2) / 100) * setH, 0);
+    part.userData.piece = p;
+    group.add(part);
+    parts.push(part);
+  }
+  return { group, parts, width: setW, height: setH };
+}

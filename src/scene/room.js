@@ -5,8 +5,8 @@
 
    12 módulos de pared (30° cada uno), separados por pilastras
    acanaladas con una línea de luz empotrada:
-   - módulo 0: el ESCAPARATE de la Obra 001. El conjunto cuelga
-     como se lleva puesto de una barra de luz, delante de un
+   - módulo 0: el ESCAPARATE de la Obra 001. El conjunto flota
+     en 3D como si alguien lo llevara puesto, delante de un
      panel retroiluminado (el halo), entre dos columnas de luz,
      con foco y sombras reales, peana de mármol y placa grabada;
    - resto de pares: escaparates de las siguientes obras o,
@@ -22,7 +22,7 @@
    ========================================================= */
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { createGarment, HOOK_CENTER } from "./garment.js";
+import { createWornOutfit } from "./garment.js";
 import { marbleTexture, flutedNormal, smokedOakTexture, plaqueTexture, haloTexture, friezeTexture, cardTexture } from "./textures.js";
 
 export const ROOM = { radius: 5, height: 4.2, bays: 12 };
@@ -298,7 +298,11 @@ export function createRoom({ obras, pieces, photos = [] }) {
   }
 
   function update(t) {
-    for (const d of displays) d.garments.forEach((g, k) => { g.userData.swing.rotation.z = Math.sin(t * 0.6 + k * 1.9) * 0.005; });
+    // Flota: sube y baja muy despacio y se balancea un poco; el scroll le da la vuelta entera.
+    displays.forEach((d, k) => {
+      d.float.position.y = d.floatY + Math.sin(t * 0.8 + k) * 0.018;
+      d.float.rotation.y = d.spin + Math.sin(t * 0.35 + k) * 0.08 * (1 - Math.min(1, d.spin * 4));
+    });
   }
 
   return { group, displays, reflective, update, setIntro, introEnd };
@@ -354,15 +358,16 @@ function buildNicheShell(bay, m, size, delay, { coves = true } = {}) {
   return { zWall, zBack, top };
 }
 
-/* Escaparate de una obra: el conjunto colgado como se lleva puesto,
-   de una barra de luz, delante de un halo retroiluminado. */
+/* Escaparate de una obra: el conjunto en 3D, "puesto" (maniquí invisible),
+   flotando delante de un halo retroiluminado. Puede girar 360° (spin). */
 function buildShowcase(bay, m, obra, pieces, main) {
   const size = main ? SHOWCASE : NICHE;
   const delay = main ? 1.3 : 1.6;
   // El escaparate principal no lleva tiras en los cantos: ya tiene halo y columnas de luz.
   const { zWall, zBack, top } = buildNicheShell(bay, m, size, delay, { coves: !main });
-  const garments = [];
-  const CENTER_Y = 1.72;
+  // El conjunto "puesto", flotando en mitad de la vitrina (más grande que en la vida real).
+  const CENTER_Y = size.y0 + size.h / 2 + 0.04;
+  const rodZ = zWall - size.depth * 0.5;
 
   // Halo: panel retroiluminado detrás del conjunto (luz propia, nítida).
   const haloMat = new THREE.MeshBasicMaterial({ map: haloTexture(), color: 0xffffff });
@@ -373,36 +378,18 @@ function buildShowcase(bay, m, obra, pieces, main) {
   halo.position.set(0, size.y0 + size.h / 2 + 0.05, zBack + 0.012);
   bay.add(halo);
 
-  // Barra de luz: tubo de acero con una línea luminosa debajo (de aquí cuelga todo).
-  const rodLen = 0.42;
-  const rodZ = zBack + rodLen - 0.05;
-  const columns = pieces.length > 2 ? Math.ceil(pieces.length / 2) : 1;
-  const stack = pieces.slice(0, columns > 1 ? columns : pieces.length);
-  const total = stack.reduce((sum, p) => sum + p.height + 0.13, 0);
-  let rodY = CENTER_Y + total / 2;
-  const railY = rodY;
-  const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, size.w - 0.1, 24), m.chrome);
-  rail.rotation.z = Math.PI / 2;
-  rail.position.set(0, railY + 0.05, zBack + rodLen - 0.02);
-  bay.add(rail);
-  const railGlow = new THREE.Mesh(new THREE.BoxGeometry(size.w - 0.14, 0.006, 0.006), m.glow(1, delay + 0.05));
-  railGlow.position.set(0, railY + 0.034, zBack + rodLen - 0.02);
-  bay.add(railGlow);
+  const outfit = createWornOutfit(pieces, main ? 1.9 : 1.6);
+  const float = new THREE.Group(); // sube y baja despacio
+  float.position.set(0, CENTER_Y, rodZ);
+  float.add(outfit.group);
+  bay.add(float);
+  const garments = outfit.parts;
 
-  pieces.forEach((piece, k) => {
-    const col = columns > 1 ? (k % columns) - (columns - 1) / 2 : 0;
-    if (columns > 1 && k === columns) rodY = CENTER_Y + total / 2 - 1.05;
-    // Soporte que baja de la barra (o sale del fondo, para la pieza de abajo).
-    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, rodLen, 16), m.chrome);
-    rod.rotation.x = Math.PI / 2;
-    rod.position.set(col * 0.6, rodY, zBack + rodLen / 2);
-    bay.add(rod);
-    const g = createGarment(piece, m.chrome);
-    g.position.set(col * 0.6 - HOOK_CENTER.x, rodY - HOOK_CENTER.y, rodZ);
-    bay.add(g);
-    garments.push(g);
-    if (columns === 1) rodY = rodY - HOOK_CENTER.y - 0.03 - piece.height;
-  });
+  // Línea de luz en la peana, bajo el conjunto: refuerza que flota.
+  const floorGlow = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.352, 96), m.glow(0.8, delay + 0.05));
+  floorGlow.rotation.x = -Math.PI / 2;
+  floorGlow.position.set(0, size.y0 + 0.063, rodZ);
+  bay.add(floorGlow);
 
   // Foco principal con sombras reales y dos luces laterales rasantes.
   const target = new THREE.Object3D();
@@ -450,7 +437,11 @@ function buildShowcase(bay, m, obra, pieces, main) {
   return {
     garments,
     spot,
+    float,
+    floatY: CENTER_Y,
+    spin: 0,          // vuelta que le da el scroll (main.js)
     focus: toWorld(new THREE.Vector3(0, CENTER_Y, rodZ)),
+    labelAt: toWorld(new THREE.Vector3(0, CENTER_Y + outfit.height / 2 + 0.12, rodZ)),
   };
 }
 

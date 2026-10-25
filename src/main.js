@@ -166,8 +166,7 @@ function buildLabels(displays) {
     b.addEventListener("pointerenter", () => { controls.state.hold = true; });
     b.addEventListener("pointerleave", () => { controls.state.hold = false; controls.state.idleSince = performance.now(); });
     labelsBox.append(b);
-    const anchor = d.focus.clone();
-    anchor.y += 0.92;
+    const anchor = d.labelAt.clone();
     labels.push({ d, el: b, anchor });
   }
 }
@@ -258,7 +257,7 @@ function onScroll() {
   controls.state.visible = hr.bottom > 0;
   heroBottom.style.opacity = String(1 - smooth(0.04, 0.2, heroP));
   heroBottom.style.pointerEvents = heroP > 0.2 ? "none" : "";
-  heroCaption.classList.toggle("show", heroP > 0.82);
+  heroCaption.classList.toggle("show", heroP > 0.95);
   if (heroP > 0.04) hint.classList.remove("show");
   document.body.classList.toggle("scrolled", hr.bottom < vh * 0.6);
 
@@ -318,8 +317,8 @@ function computeCamera(yaw, pitch, p) {
   }
   camUp.lerp(WORLD_UP, smooth(0, 0.5, p)).normalize();
   const a = main.angle;
-  camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 1.7 : 2.3);
-  camFinal.y = 1.74;
+  camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 1.7 : 1.35); // lejos: el conjunto entero cabe en pantalla
+  camFinal.y = 1.9;
   lookFinal.copy(main.focus);
   // Curva que pasa por un lado del logo (nunca lo atraviesa).
   const side = tmp.set(Math.cos(a), 0, Math.sin(a));
@@ -385,7 +384,11 @@ function frame(now) {
   const yawTarget = baseYaw() + s.yaw;
   currentYaw = currentYaw === null ? yawTarget : currentYaw + (yawTarget - currentYaw) * (1 - Math.pow(0.8, f));
   const pitchNow = Math.atan2(Math.sin(s.pitch), Math.cos(s.pitch)); // misma vista, sin vueltas acumuladas
-  computeCamera(currentYaw, pitchNow * (1 - heroP), heroP);
+  // Al bajar: primero la cámara viaja hasta la vitrina (60 % del scroll de la portada)…
+  const fly = clamp01(heroP / 0.6);
+  computeCamera(currentYaw, pitchNow * (1 - fly), fly);
+  // …y después el conjunto da una vuelta completa de 360°, al ritmo del scroll.
+  if (three.displays[0]) three.displays[0].spin = Math.PI * 2 * (reduce ? 0 : smooth(0.62, 0.94, heroP));
 
   // Bajada de la cámara en la entrada: de cerca del techo, mirando abajo, a su sitio.
   if (it < CAM_IN) {
@@ -429,8 +432,8 @@ function frame(now) {
 
   // Tamaño: más pequeño, flotando en el centro de la sala.
   // (Siempre del mismo tamaño en pantalla, también al acercarse por arriba o por abajo.)
-  const visW = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect * camPos.distanceTo(L);
-  const width = (portrait() ? 0.66 : 0.33) * visW;
+  const visW = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect * orbitDist;
+  const width = (portrait() ? 0.52 : 0.26) * visW;
   logo.position.copy(L);
   logo.position.y += reduce ? 0 : Math.sin(t * 0.9) * 0.02;
   logo.scale.setScalar((width / 10) * (1 + (1 - k) * 0.6));
@@ -516,7 +519,7 @@ function placeLabels() {
     const elW = L2.el.offsetWidth || 160;
     const elH = L2.el.offsetHeight || 32;
     const overLogo = x + elW / 2 > lr.x0 && x - elW / 2 < lr.x1 && y > lr.y0 && y - elH < lr.y1;
-    const visible = facing > 0.7 && x > elW / 2 + 8 && x < w - elW / 2 - 8 && y > 80 && y < h - 40 && !overLogo && heroP < 0.75;
+    const visible = facing > 0.7 && x > elW / 2 + 8 && x < w - elW / 2 - 8 && y > 80 && y < h - 40 && !overLogo && heroP < 0.45;
     L2.el.classList.toggle("show", visible && document.body.classList.contains("revealed"));
     L2.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) translate(-50%, -100%)`;
     L2.el.tabIndex = visible ? 0 : -1;

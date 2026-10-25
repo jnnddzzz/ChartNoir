@@ -194,7 +194,7 @@ body.scrolled .mini { opacity: 1; }
 .mini-label { letter-spacing: 0.24em; text-transform: uppercase; margin-right: 4px; }
 
 /* ---------- Portada: vestidor ---------- */
-.hero { position: relative; height: 280vh; }
+.hero { position: relative; height: 420vh; } /* viaje a la vitrina + vuelta de 360° del conjunto */
 .hero-sticky {
   position: sticky; top: 0;
   height: 100vh; height: 100svh;
