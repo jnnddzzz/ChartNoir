@@ -1,6 +1,6 @@
 # Chart Noir
 
-La web oficial de Chart Noir: pantalla de carga, un vestidor circular en 3D que gira alrededor del logo plateado con las prendas en sus hornacinas, la cuenta atrás hasta el primer drop, la Obra 001 (pieza 1/1) que se separa en chaleco y pantalón, puja y opinión, y el taller.
+La web oficial de Chart Noir: pantalla de carga, un vestidor circular en 3D convertido en museo de moda (friso, cartelas, cordón de terciopelo, pared del taller) que gira en todas direcciones alrededor del logo plateado, la Obra 001 Génesis (pieza 1/1) que se separa en chaleco y pantalón, puja y opinión, el taller y la cuenta atrás del primer drop en la cabecera.
 
 Hecha con **Vite** (la herramienta que sirve la web mientras trabajas y la empaqueta para publicarla) y **Three.js** (la librería que dibuja el logo en 3D).
 
@@ -59,7 +59,7 @@ Chart-Noir/
 │   ├── main.js           une las piezas y anima el logo
 │   ├── styles.css        colores y tipografía de la marca
 │   ├── intro.js          pantalla de carga 0 → 100
-│   ├── countdown.js      cuenta atrás
+│   ├── countdown.js      cuenta atrás (cabecera)
 │   ├── content.js        la obra, la ficha, puja y opinión, taller y redes
 │   ├── feedback.js       dónde se guardan pujas y opiniones
 │   ├── interaction.js    ratón, dedo y teclado

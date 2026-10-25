@@ -4,7 +4,7 @@ Este archivo es la guía del proyecto. Léelo entero antes de escribir código y
 
 ## Qué es Chart Noir
 
-Marca española de streetwear fundada por Jano. Concepto: un club privado nocturno de ciudad convertido en marca de ropa. Elegancia exótica de calle (Londres, Nueva York, 3 de la mañana), atrevida pero siempre de alta clase. La web debe sentirse como un museo de arte cuya obra es la ropa, sin decirlo nunca de forma explícita.
+Marca española de streetwear fundada por Jano. Concepto: un club privado nocturno de ciudad convertido en marca de ropa. Elegancia exótica de calle (Londres, Nueva York, 3 de la mañana), atrevida pero siempre de alta clase. La web debe sentirse como un museo de arte cuya obra es la ropa. **Desde el 25/10/2026 (quinta versión) Jano pidió que se diga**: el vestidor sigue siendo un armario, pero lleva rótulos de museo ("museo de moda").
 
 - Tono: misterioso, serio, espeluznante e impactante. La marca no da miedo: intriga.
 - Público: 20-25 años. Valores: exclusividad, ambición/ascenso, autenticidad.
@@ -13,19 +13,20 @@ Marca española de streetwear fundada por Jano. Concepto: un club privado noctur
 - Redes principales: Instagram y TikTok (ahora mismo, la cuenta personal @jjn.dzz).
 - La música ya **no** aparece en la web: Jano decidió que no tiene que ver con la marca.
 
-## Fase actual: el vestidor circular (25/10/2026, cuarta versión)
+## Fase actual: el vestidor-museo (25/10/2026, quinta versión)
 
 Una sola página con scroll. Estilo **minimalista, moderno, urbano, futurista, limpio y con mucha clase**, con animaciones al hacer scroll. Jano irá añadiendo más obras, fotos e información.
 
 0. **Pantalla de carga**: número 000 → 100 (avance irregular, nunca por delante de lo descargado) y barra granate fina. Al llegar a 100: corte seco a negro (~300 ms), destello blanco breve y entrada.
-1. **Portada 3D: vestidor circular (cuarta versión, 25/10/2026 — Jano: "se adapta casi 100%").** Referencia: blurboys.com (sala circular, logo fijo en el centro, la sala gira a su alrededor). Sala circular + recorrido de cámara de la primera versión (al bajar, la cámara viaja hasta el escaparate).
+1. **Portada 3D: vestidor circular convertido en museo (quinta versión, 25/10/2026; la cuarta "se adapta casi 100%").** Pantalla limpia: **sin cuenta atrás en la portada** (solo queda la pequeña de la cabecera, al salir de la portada). Referencia: blurboys.com (sala circular, logo fijo en el centro, la sala gira a su alrededor). Sala circular + recorrido de cámara de la primera versión (al bajar, la cámara viaja hasta el escaparate).
    - **Entrada inmersiva**: tras el corte a negro la sala está a oscuras; las luces se encienden en secuencia con un parpadeo seco (anillo del techo, juntas recorriendo la sala, columnas y halo del escaparate, focos, lámpara, charco de luz) mientras la cámara baja desde el techo; el símbolo aparece al final con su frenazo seco.
-   - **El símbolo**: más pequeño (~33 % del ancho en horizontal, ~66 % en vertical), flotando en el centro de la sala (cámara a 4,2 m). Descansa de frente; **cada ~9 s da una vuelta completa de 360°**; arrastrándolo se gira libremente **en cualquier dirección** y al soltarlo vuelve solo de frente.
-   - **Vista 360°**: arrastrar fuera del símbolo gira la sala y deja mirar al techo y al suelo (táctil: botón **360°**). ‹ › y flechas saltan de escaparate. En reposo, deriva lenta y la mirada vuelve al horizonte.
+   - **El símbolo**: más pequeño (~33 % del ancho en horizontal, ~66 % en vertical), flotando en el centro de la sala (cámara a 4,2 m). **Siempre en el centro de la pantalla y siempre de frente a la cámara**, desde cualquier lado (también desde arriba o desde abajo), con el mismo tamaño en pantalla. Descansa de frente; **cada ~9 s da una vuelta completa de 360°**; arrastrándolo se gira libremente **en cualquier dirección** y al soltarlo vuelve solo de frente.
+   - **Vista 360° en todas direcciones** (quinta versión): arrastrar fuera del símbolo gira la sala alrededor del símbolo **sin topes**: a los lados, por encima (se ve el suelo desde el techo) y por debajo (el techo desde el suelo), dando la vuelta completa. La cámara recorre una esfera alrededor del símbolo y se acerca lo justo para no salir de la sala. Táctil: el dedo sobre el símbolo lo gira en cualquier dirección sin mover la página; botón **360°** para girar la sala libremente. ‹ › y flechas saltan de escaparate. En reposo, deriva lenta y la vista vuelve al horizonte.
    - **Sala majestuosa**: 5 m de radio y 4,2 m de alto; pilastras acanaladas con capitel y basa de acero y línea de luz empotrada entre módulos.
    - **Escaparate principal (módulo 0)**: el conjunto colgado como se lleva puesto de una **barra de luz** (tubo de acero con línea luminosa), delante de un **halo retroiluminado** (caja de luz de museo), entre **dos columnas de luz**, con foco con sombras reales y dos luces laterales; fondo de roble acanalado, marco de acero, peana de mármol y placa "OBRA 001 · GÉNESIS / 1/1 · TALLA M".
-   - Resto de hornacinas: biblioteca de telas (baldas de roble con línea de luz y telas dobladas) hasta que lleguen nuevas obras. Armarios de laca acanalada con tiradores cromados y haces de luz.
-   - **Suelo** de mármol negro con vetas, aros y líneas radiales de acero y charco de luz bajo el símbolo. **Techo** artesonado con anillo de luz, vigas, focos y lámpara central de anillos escalonados.
+   - **Museo de moda**: friso con letras de museo retroiluminadas en la cornisa de cada módulo ("MUSEO DE ARTE" sobre el escaparate, "SALA I · GÉNESIS", "COLECCIÓN PERMANENTE", "MUSEO DE MODA", "CHART NOIR · MUSEO DE ARTE"…); delante del escaparate, cordón de terciopelo burdeos entre postes de acero y atril con la **cartela** de la obra; **pared del taller** (módulo 6, enfrente del escaparate) con texto de sala "CHART NOIR / MUSEO DE ARTE / SALA I · EL TALLER" y las fotos del proceso enmarcadas (marco negro, paspartú, luz de cuadro y cartela); dos bancos de museo de piel negra; raíl circular de focos de museo en el techo.
+   - Resto de hornacinas: biblioteca de telas ("ARCHIVO DE TELAS": baldas de roble con línea de luz, telas dobladas y rollos de tela) hasta que lleguen nuevas obras. Armarios de laca acanalada con tiradores cromados y haces de luz.
+   - **Suelo** de mármol negro con vetas, aros y líneas radiales de acero y charco de luz bajo el símbolo. **Techo** artesonado (cúpula con aros y radios de acero) con anillo de luz, vigas, focos, raíl de focos y lámpara central de anillos escalonados.
    - Etiqueta flotante por escaparate ("001 · Génesis · 1/1 +"); nunca encima del símbolo. Tocar una prenda abre su ficha.
    - Al final del recorrido: "Obra 001 · 1/1 · Talla M · Chaleco y pantalón — **Génesis.**" + "Verlo de cerca".
 2. **Obra 001**: "Mi primera obra de arte." · 1/1 · Talla M. El conjunto aparece montado (fotos de estudio, simétricas) y **se separa al hacer scroll** en chaleco y pantalón. Cada pieza abre su ficha: foto, 1/1, talla, resumen, detalles, medidas en plano, "Pedir por Instagram", "Pujar por esta obra" y "Ver la otra pieza".
@@ -33,7 +34,7 @@ Una sola página con scroll. Estilo **minimalista, moderno, urbano, futurista, l
 4. **El taller**: hecho a mano · telas elegidas una a una · hecho para durar, con fotos del proceso (patrón del pantalón, espalda del chaleco).
 5. **Cierre**: "No es para todos. Nunca lo fue." + Instagram y TikTok.
 
-Cuenta atrás: fecha provisional 1 de diciembre de 2026, 00:00 hora de España, en `src/config.js`.
+Cuenta atrás (solo en la cabecera desde la quinta versión): fecha provisional 1 de diciembre de 2026, 00:00 hora de España, en `src/config.js`.
 
 ### Datos de la Obra 001 (dados por Jano el 24/10/2026)
 - Nombre: **Génesis** (propuesto el 25/10/2026 porque Jano no quería "El conjunto": es su primera obra, el origen). Cambiable en `src/config.js`.
@@ -49,6 +50,8 @@ Cuenta atrás: fecha provisional 1 de diciembre de 2026, 00:00 hora de España, 
 - Logo apagado o gris (segunda versión): tiene que ser llamativo y luminoso.
 - Letras de los cantos superpuestas detrás del logo.
 - Sala que no deja mirar 360° (arriba/abajo), interior de armario pobre, y exponer solo una pieza: el conjunto se expone completo.
+- Giro solo en horizontal (cuarta versión): el logo y la sala giran 360° en **todas** direcciones, con el logo siempre en el centro.
+- Cuenta atrás en la portada: la portada queda limpia.
 - Llamar "El conjunto" a la obra: usar su nombre (Génesis).
 - Símbolo girando sin parar (de canto se ve oscuro): descansa de frente y da vueltas completas de vez en cuando.
 - Prendas como recortes planos colgados ("se ve muy cutre"): siempre en 3D, con volumen, textura y percha realista.
@@ -104,9 +107,10 @@ Registro de decisiones. Añadir aquí cada nueva decisión de marca o de diseño
 - **Fotos de producto "de estudio"**: fondo quitado con rembg/BiRefNet; después se enderezan, el contorno se hace simétrico (intersección con su espejo: la tela de dentro es la real, solo se recortan bordes) y se iguala la luz y el balance de blancos (crudo limpio). Script: `scripts/foto-estudio.py` (instrucciones dentro); Claude lo repite con cada foto nueva. El pantalón usa la foto frontal nueva (se ven los bolsillos).
 - **Prendas 3D** (`src/scene/garment.js`): malla curvada (volumen de pecho/perneras, caída y pliegues), relieve de tejido generado, brillo de tela (sheen), percha de madera negra con gancho cromado o percha de pinzas, sombra suave en el fondo de la hornacina.
 - **Sala** (`src/scene/room.js`, texturas en `src/scene/textures.js`): 12 módulos de 30°; módulo 0 = escaparate del conjunto; pares = escaparates de obras o biblioteca de telas; impares = armarios acanalados. Texturas generadas por código (mármol, acanalado, roble ahumado, placa grabada): sin descargas extra. Suelo, laca y cromo reflejan la sala real (foto cúbica al cargar). Solo el foco del escaparate principal proyecta sombras (rendimiento).
-- **Cámara** (`src/main.js`): orbita alrededor del logo (giro) con mirada que sube y baja (techo/suelo). Al bajar con el scroll recorre una curva que pasa por un lado del logo (nunca lo atraviesa) hasta quedar frente al escaparate. Tone mapping Neutral, exposición 1.0; la tela lleva un color base un punto por debajo del blanco para que el estampado no se lave bajo el foco.
+- **Cámara** (`src/main.js`): órbita esférica alrededor del logo, sin topes (giro y elevación libres; boca abajo el giro lateral se invierte para que el arrastre siga siendo natural); siempre mira al logo y su distancia se acorta por arriba y por abajo para no atravesar techo ni suelo. El logo copia la orientación de la cámara (siempre de frente) y sus reflejos de estudio la acompañan. Al bajar con el scroll recorre una curva que pasa por un lado del logo (nunca lo atraviesa) hasta quedar frente al escaparate. Tone mapping Neutral, exposición 1.0; la tela lleva un color base un punto por debajo del blanco para que el estampado no se lave bajo el foco.
 - **Pujas y opiniones** (`src/feedback.js`): en la vista previa de Claude se guardan en la base de datos del artifact (cada persona escribe solo lo suyo en `pujas/<id>` y `opiniones/<id>`; solo el dueño lo lee todo). En la web publicada se envían a `FEEDBACK_ENDPOINT` (Google Apps Script → Google Sheets, `scripts/google-sheets.gs`). Sin ninguna de las dos, los formularios se desactivan y lo dicen: nunca se finge un envío.
-- **Cuenta atrás**: cifras estrechas y finas en plata; cada cifra cae como en un marcador. La de la cabecera aparece al salir de la portada.
+- **Cuenta atrás**: cifras estrechas y finas en plata. Quitada de la portada el 25/10/2026 (pantalla más limpia); queda la de la cabecera, que aparece al salir de la portada. `startCountdown` mantiene la versión grande con cifras que caen por si vuelve.
+- **Museo** (25/10/2026): rótulos, cartelas y texto de sala dibujados en canvas con Archivo (`friezeTexture`, `cardTexture` en `textures.js`; se espera a la fuente antes de montar la sala). Los textos del friso están en `FRIEZE` (`room.js`). La pared del taller solo aparece si el módulo 6 no lo ocupa una obra.
 - **Separación del conjunto**: en escritorio las piezas se abren en diagonal con su nombre al lado; en móvil solo en vertical, con el nombre debajo.
 - **Entradas sin riesgo**: ninguna animación empieza con el contenido invisible si puede quedarse atascada.
 - **Plan B sin WebGL**: logo plano (`public/logo.svg`) y el resto de la web.
@@ -129,13 +133,13 @@ Registro de decisiones. Añadir aquí cada nueva decisión de marca o de diseño
 - `src/main.js` — une las piezas, el recorrido de cámara y las animaciones de scroll.
 - `src/scene/stage.js` — renderizador, cámara y reflejos de estudio del logo.
 - `src/scene/logo.js` — el logo 3D plateado.
-- `src/scene/room.js` — la sala circular: escaparates, biblioteca de telas, armarios, suelo, techo y luces.
-- `src/scene/textures.js` — mármol, acanalado, roble y placa, generados por código.
+- `src/scene/room.js` — la sala circular: escaparates, museo (friso, cartela, cordón, pared del taller, bancos), biblioteca de telas, armarios, suelo, techo y luces.
+- `src/scene/textures.js` — mármol, acanalado, roble, placa, friso y cartelas, generados por código.
 - `src/scene/garment.js` — cada prenda en 3D con su percha y su sombra.
 - `src/feedback.js` — dónde se guardan pujas y opiniones.
 - `src/interaction.js` — vista 360° (arrastre, modo 360° táctil, botones, teclado) y tocar prendas.
 - `src/intro.js` — pantalla de carga 000-100 y entrada.
-- `src/countdown.js` — cuenta atrás (la grande y la de la cabecera).
+- `src/countdown.js` — cuenta atrás (la de la cabecera; la grande ya no se usa en la portada).
 - `src/content.js` — la obra, la ficha de cada pieza, puja y opinión, taller, redes y apariciones.
 - `src/styles.css` — estilos y tokens.
 - `public/productos/` — fotos de estudio de cada obra y fotos del proceso.

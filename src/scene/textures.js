@@ -160,3 +160,67 @@ export function haloTexture(size = 512) {
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
+
+/** Friso con letras grabadas en acero, como en la entrada de un museo. */
+export function friezeTexture(text) {
+  const W = 1024, H = 96;
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  g.fillStyle = "#0b0b0c";
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = "#3a3b3f";
+  g.fillRect(0, 6, W, 1);
+  g.fillRect(0, H - 7, W, 1);
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.font = "500 46px 'Archivo', 'Helvetica Neue', Arial, sans-serif";
+  if ("fontStretch" in g) g.fontStretch = "extra-condensed";
+  if ("letterSpacing" in g) g.letterSpacing = "16px";
+  // Sombra fina debajo y luz arriba: letras rehundidas en el metal.
+  g.fillStyle = "#000";
+  g.fillText(text, W / 2, H / 2 + 2);
+  const grad = g.createLinearGradient(0, H * 0.25, 0, H * 0.75);
+  grad.addColorStop(0, "#e6e8ec"); grad.addColorStop(1, "#8f9297");
+  g.fillStyle = grad;
+  g.fillText(text, W / 2, H / 2);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+
+/** Cartela de museo (tarjeta clara) o texto de pared (oscuro): líneas de
+    [texto, tamaño, peso, espacio después]; los textos largos se parten solos. */
+export function cardTexture(lines, { w = 512, h = 640, bg = "#efece6", fg = "#16161a", pad = 50, top = 70, align = "left" } = {}) {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d");
+  g.fillStyle = bg;
+  g.fillRect(0, 0, w, h);
+  g.fillStyle = fg;
+  g.textAlign = align;
+  if ("fontStretch" in g) g.fontStretch = "normal";
+  const x = align === "center" ? w / 2 : pad;
+  let y = top;
+  for (const [text, size, weight, gap, opts = {}] of lines) {
+    g.font = `${weight} ${size}px 'Archivo', 'Helvetica Neue', Arial, sans-serif`;
+    if ("fontStretch" in g) g.fontStretch = opts.narrow ? "extra-condensed" : "normal";
+    if ("letterSpacing" in g) g.letterSpacing = opts.track ? `${opts.track}px` : "0px";
+    g.fillStyle = opts.color || fg;
+    const words = text.split(" ");
+    let line = "";
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word;
+      if (g.measureText(test).width > w - pad * 2 && line) {
+        g.fillText(line, x, y); y += size * 1.3; line = word;
+      } else line = test;
+    }
+    g.fillText(line, x, y);
+    y += size * 1.3 + gap;
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}

@@ -1,9 +1,10 @@
 /* =========================================================
    Chart Noir — web oficial
-   Punto de entrada: monta el vestidor 3D (la sala gira 360°
-   alrededor del logo y, al bajar, la cámara viaja hasta el
-   escaparate del conjunto), la pantalla de carga, la cuenta
-   atrás, la obra, la puja y la opinión.
+   Punto de entrada: monta el vestidor-museo 3D (la sala gira
+   360° en todas direcciones alrededor del logo y, al bajar, la
+   cámara viaja hasta el escaparate de la obra), la pantalla de
+   carga, la cuenta atrás de la cabecera, la obra, la puja y la
+   opinión.
    ========================================================= */
 import "./styles.css";
 import * as THREE from "three";
@@ -46,9 +47,6 @@ const dialog = createPieceDialog(REDES, { onBid: () => goTo("voz") });
 renderObra(obra, { onOpen: dialog.open });
 renderSocial(REDES);
 renderProceso(TALLER_FOTOS);
-const dropDay = DROP_DATE.toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", year: "numeric" }).replaceAll("/", ".");
-document.getElementById("drop-label").textContent = `Primer drop · ${dropDay}`;
-startCountdown(document.getElementById("count"), DROP_DATE, { animated: !reduce });
 startCountdown(document.getElementById("mini"), DROP_DATE);
 createFeedbackStore({ endpoint: FEEDBACK_ENDPOINT }).then((store) => setupVoz(store, obra));
 document.getElementById("caption-open").addEventListener("click", () => goTo("obra"));
@@ -68,8 +66,13 @@ try {
   stage.scene.add(logo);
   three = { ...stage, logo, room: null, displays: [], cloths: [] };
 
-  sceneReady = loadPieces(manager).then((pieces) => {
-    const room = createRoom({ obras: OBRAS, pieces });
+  // Las letras del friso y las cartelas se dibujan con Archivo: esperamos a la fuente.
+  const fontFor3D = Promise.race([
+    Promise.all(["500 46px Archivo", "600 62px Archivo", "400 30px Archivo"].map((f) => document.fonts?.load(f))).catch(() => {}),
+    new Promise((r) => setTimeout(r, 2500)),
+  ]);
+  sceneReady = Promise.all([loadPieces(manager), loadPhotos(manager), fontFor3D]).then(([pieces, photos]) => {
+    const room = createRoom({ obras: OBRAS, pieces, photos });
     stage.scene.add(room.group);
     three.room = room;
     three.displays = room.displays;
@@ -108,6 +111,16 @@ function loadPieces(mgr) {
     }
   }
   return Promise.all(jobs).then((list) => list.filter(Boolean));
+}
+
+/* Las fotos del proceso, para enmarcarlas en la pared del taller. */
+function loadPhotos(mgr) {
+  const loader = new THREE.TextureLoader(mgr);
+  return Promise.all(TALLER_FOTOS.map((f) => new Promise((res) => loader.load(f.src, (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 8;
+    res({ texture, texto: f.texto });
+  }, undefined, () => res(null))))).then((list) => list.filter(Boolean));
 }
 
 /* Una foto de la sala desde el centro: el mármol, la laca y el cromo
@@ -213,18 +226,27 @@ function setExplore(on) {
   document.body.classList.toggle("exploring", on);
   document.documentElement.style.overflow = on ? "hidden" : "";
   if (on) {
-    hint.textContent = "Mira alrededor: arriba, abajo, a los lados";
+    hint.textContent = "Gira la sala hacia cualquier lado: por encima, por debajo, alrededor";
     hint.classList.add("show");
   } else {
     hint.classList.remove("show");
-    controls.state.pitch = controls.state.pitch * 0.5;
   }
 }
+// En táctil, el dedo sobre el símbolo lo gira en cualquier dirección (sin hacer scroll):
+// una zona invisible encima del símbolo que no deja desplazar la página.
+const grip = document.createElement("div");
+grip.className = "logo-grip";
+grip.setAttribute("aria-hidden", "true");
+if (controls.coarse && three) {
+  labelsBox.append(grip);
+  controls.bind(grip);
+}
+
 if (controls.coarse) {
   exploreBtn.hidden = false;
   exploreBtn.addEventListener("click", () => setExplore(true));
   exitBtn.addEventListener("click", () => setExplore(false));
-  hint.textContent = "Desliza para girar la sala · 360° para mirar alrededor";
+  hint.textContent = "Gira el símbolo con el dedo · 360° para girar la sala en todas direcciones";
 }
 
 // ---------- Scroll ----------
@@ -267,26 +289,25 @@ const camLook = new THREE.Vector3();
 const tmp = new THREE.Vector3();
 const tmp2 = new THREE.Vector3();
 
+// Órbita esférica: la cámara recorre una esfera alrededor del símbolo, sin topes
+// (por encima, por debajo, dando la vuelta entera) y siempre lo mira: el símbolo
+// se queda en el centro y es la sala la que gira a su alrededor.
+const camUp = new THREE.Vector3(0, 1, 0);
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+let orbitDist = 4.2;
 function computeCamera(yaw, pitch, p) {
   const port = portrait();
   const D = port ? 4.6 : 4.2;   // la cámara lejos: el símbolo flota en mitad de la sala
   L.set(0, 1.95, 0);
-  const camY = 1.85;
-  // Órbita: detrás del logo, mirando hacia él (y a la pared que hay detrás).
-  camOrbit.copy(L).addScaledVector(dir(yaw, tmp), -D);
-  camOrbit.y = camY;
-  // Mirada base hacia el logo (en vertical, algo más abajo: el escaparate se ve debajo).
-  lookOrbit.set(L.x, L.y - (port ? 0.15 : 0.05), L.z);
-  // Mirar arriba y abajo: giramos la dirección de la mirada.
-  const v = tmp2.subVectors(lookOrbit, camOrbit);
-  const horiz = Math.hypot(v.x, v.z);
-  const elev = Math.atan2(v.y, horiz) + pitch;
-  const len = v.length();
-  lookOrbit.set(
-    camOrbit.x + (v.x / horiz) * Math.cos(elev) * len,
-    camOrbit.y + Math.sin(elev) * len,
-    camOrbit.z + (v.z / horiz) * Math.cos(elev) * len,
-  );
+  const f = dir(yaw, tmp);
+  const sp = Math.sin(pitch), cp = Math.cos(pitch);
+  // Dentro de la sala: por arriba no pasa de la lámpara, por abajo no atraviesa el suelo.
+  const room = sp > 0.001 ? (3.72 - L.y) / sp : sp < -0.001 ? (L.y - 0.28) / -sp : Infinity;
+  orbitDist = Math.min(D, room);
+  camOrbit.copy(L).addScaledVector(f, -cp * orbitDist);
+  camOrbit.y += sp * orbitDist;
+  camUp.copy(f).multiplyScalar(sp).addScaledVector(WORLD_UP, cp);
+  lookOrbit.copy(L);
 
   // Escaparate principal: la cámara viaja hasta tenerlo delante.
   const main = three.displays[0];
@@ -295,6 +316,7 @@ function computeCamera(yaw, pitch, p) {
     camLook.copy(lookOrbit);
     return;
   }
+  camUp.lerp(WORLD_UP, smooth(0, 0.5, p)).normalize();
   const a = main.angle;
   camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 1.7 : 2.3);
   camFinal.y = 1.74;
@@ -356,11 +378,14 @@ function frame(now) {
     }
     s.pitch += s.pvel * f;
     s.pvel *= Math.pow(0.9, f);
-    if (now - s.idleSince > 2500) s.pitch += (0 - s.pitch) * (1 - Math.pow(0.97, f));
+    // En reposo, la mirada vuelve sola al horizonte (por el camino más corto).
+    const home = Math.round(s.pitch / (Math.PI * 2)) * Math.PI * 2;
+    if (now - s.idleSince > 2500) s.pitch += (home - s.pitch) * (1 - Math.pow(0.97, f));
   }
   const yawTarget = baseYaw() + s.yaw;
   currentYaw = currentYaw === null ? yawTarget : currentYaw + (yawTarget - currentYaw) * (1 - Math.pow(0.8, f));
-  computeCamera(currentYaw, s.pitch * (1 - heroP), heroP);
+  const pitchNow = Math.atan2(Math.sin(s.pitch), Math.cos(s.pitch)); // misma vista, sin vueltas acumuladas
+  computeCamera(currentYaw, pitchNow * (1 - heroP), heroP);
 
   // Bajada de la cámara en la entrada: de cerca del techo, mirando abajo, a su sitio.
   if (it < CAM_IN) {
@@ -383,6 +408,7 @@ function frame(now) {
   camPos.x += (Math.random() - 0.5) * shake;
   camPos.y += (Math.random() - 0.5) * shake;
   camera.position.copy(camPos);
+  camera.up.copy(it < CAM_IN ? WORLD_UP : camUp);
   camera.lookAt(camLook);
 
   // Giro del símbolo: inercia del arrastre y, al soltarlo, vuelta suave de frente.
@@ -402,19 +428,21 @@ function frame(now) {
   }
 
   // Tamaño: más pequeño, flotando en el centro de la sala.
-  const D = portrait() ? 4.6 : 4.2;
-  const visW = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect * D;
+  // (Siempre del mismo tamaño en pantalla, también al acercarse por arriba o por abajo.)
+  const visW = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect * camPos.distanceTo(L);
   const width = (portrait() ? 0.66 : 0.33) * visW;
   logo.position.copy(L);
   logo.position.y += reduce ? 0 : Math.sin(t * 0.9) * 0.02;
   logo.scale.setScalar((width / 10) * (1 + (1 - k) * 0.6));
-  // Orientación final = giro de la persona × de frente a la cámara × vuelta automática.
-  const face = Math.atan2(camera.position.x - L.x, camera.position.z - L.z);
-  qFace.setFromEuler(tmpEuler.set((1 - k) * 0.4, face + autoSpin.angle + (1 - k) * -1.2, 0, "YXZ"));
-  logo.quaternion.copy(logoQ).multiply(qFace);
+  // Orientación final = giro de la persona × de frente a la cámara (desde
+  // cualquier lado: también desde arriba o desde abajo) × vuelta automática.
+  qView.copy(camera.quaternion);
+  qFace.setFromEuler(tmpEuler.set((1 - k) * 0.4, autoSpin.angle + (1 - k) * -1.2, 0, "YXZ"));
+  logo.quaternion.copy(logoQ).multiply(qView).multiply(qFace);
   // Los reflejos de estudio acompañan a la cámara, con un barrido de luz lento.
   const sweep = reduce ? 0 : Math.sin(t * 0.35) * 0.45;
-  for (const m of logo.userData.materials) m.envMapRotation.set(0, face + sweep, 0);
+  envEuler.setFromQuaternion(qEnv.copy(qView).multiply(qSweep.setFromAxisAngle(WORLD_UP, sweep)), "YXZ");
+  for (const m of logo.userData.materials) m.envMapRotation.set(ENV_SIGN * envEuler.x, envEuler.y, ENV_SIGN * envEuler.z, "YXZ");
 
   // El escaparate brilla un poco más bajo el cursor (cuando ya se han encendido las luces).
   if (introDone) {
@@ -429,7 +457,12 @@ function frame(now) {
   placeLabels();
 }
 const tmpEuler = new THREE.Euler();
+const envEuler = new THREE.Euler();
+const ENV_SIGN = 1;
 const qFace = new THREE.Quaternion();
+const qView = new THREE.Quaternion();
+const qEnv = new THREE.Quaternion();
+const qSweep = new THREE.Quaternion();
 const qIdentity = new THREE.Quaternion();
 const autoSpin = { start: -1, angle: 0, next: 0 };
 requestAnimationFrame(frame);
@@ -466,6 +499,14 @@ function placeLabels() {
   const h = canvas.clientHeight;
   three.logo.updateMatrixWorld();
   const lr = logoRect(cam, w, h);
+  if (grip.isConnected) {
+    const on = three.logo.visible && heroP < 0.3 && document.body.classList.contains("revealed");
+    grip.classList.toggle("show", on);
+    if (on) Object.assign(grip.style, {
+      left: `${Math.round(lr.x0 + 16)}px`, top: `${Math.round(lr.y0 + 16)}px`,
+      width: `${Math.round(lr.x1 - lr.x0 - 32)}px`, height: `${Math.round(lr.y1 - lr.y0 - 32)}px`,
+    });
+  }
   for (const L2 of labels) {
     toA.subVectors(L2.anchor, cam.position).normalize();
     const facing = toA.dot(fwd);

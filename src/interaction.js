@@ -1,16 +1,14 @@
 /* =========================================================
    Controles del vestidor (vista 360°):
    - arrastrar sobre el símbolo lo gira 360° en cualquier dirección;
-   - arrastrar fuera de él gira la sala alrededor del símbolo (horizontal)
-     y deja mirar arriba y abajo, al techo y al suelo (vertical);
+   - arrastrar fuera de él gira la sala alrededor del símbolo en
+     cualquier dirección, sin topes: a los lados, por encima (techo)
+     y por debajo (suelo), dando la vuelta completa;
    - flechas del teclado y botones ‹ › giran de escaparate en escaparate;
    - un toque sin arrastrar es un "clic" sobre la escena (elegir prenda);
-   - en pantallas táctiles el dedo en vertical hace scroll, salvo en
-     el modo "360°" (botón), donde el dedo mira libremente.
+   - en pantallas táctiles el dedo en vertical hace scroll, salvo sobre
+     el símbolo o en el modo "360°" (botón), donde el dedo gira libremente.
    ========================================================= */
-
-export const PITCH_MIN = -0.95; // mirar al suelo
-export const PITCH_MAX = 0.95;  // mirar al techo
 
 export function createControls(canvas, { step, onTap, onMove, onInteract, hitLogo, onLogoDrag }) {
   const coarse = window.matchMedia("(pointer: coarse)").matches;
@@ -32,7 +30,7 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
   const syncTouch = () => { canvas.style.touchAction = state.explore ? "none" : "pan-y"; };
   syncTouch();
 
-  canvas.addEventListener("pointerdown", (e) => {
+  const down = (e) => {
     if (!state.enabled) return;
     state.dragging = true;
     const r0 = canvas.getBoundingClientRect();
@@ -42,10 +40,11 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
     startY = lastY = e.clientY;
     state.vel = state.pvel = 0;
     state.goal = null;
-    canvas.setPointerCapture(e.pointerId);
+    e.currentTarget.setPointerCapture(e.pointerId);
     canvas.classList.add("dragging");
     onInteract?.();
-  });
+  };
+  canvas.addEventListener("pointerdown", down);
 
   window.addEventListener("pointermove", (e) => {
     const r = canvas.getBoundingClientRect();
@@ -61,17 +60,18 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
     lastY = e.clientY;
     if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 6) moved = true;
     if (state.mode === "logo") {
-      onLogoDrag?.(dx / Math.max(320, r.width), state.explore ? dy / Math.max(320, r.width) : 0);
+      onLogoDrag?.(dx / Math.max(320, r.width), dy / Math.max(320, r.width));
       state.idleSince = performance.now();
       return;
     }
     // Arrastrar hacia un lado mueve la sala hacia ese lado (como agarrarla).
+    // Boca abajo (después de pasar por encima), el giro lateral se invierte.
     const k = 2.6 / Math.max(320, r.width);
-    state.vel = -dx * k;
+    state.vel = -dx * k * (Math.cos(state.pitch) < 0 ? -1 : 1);
     state.yaw += state.vel;
     if (state.explore) {
       state.pvel = dy * k;
-      state.pitch = clamp(state.pitch + state.pvel, PITCH_MIN, PITCH_MAX);
+      state.pitch += state.pvel;
     }
     state.idleSince = performance.now();
   });
@@ -109,7 +109,8 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
     e.preventDefault();
   });
 
-  return { state, turn, setExplore, coarse };
-}
+  // Otras superficies que también empiezan un arrastre (el agarre táctil del símbolo).
+  const bind = (el) => el.addEventListener("pointerdown", down);
 
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  return { state, turn, setExplore, coarse, bind };
+}

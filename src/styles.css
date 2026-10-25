@@ -212,7 +212,7 @@ body.scrolled .mini { opacity: 1; }
 }
 #scene.dragging { cursor: grabbing; }
 
-/* Abajo: cuenta atrás centrada y controles de giro (como en la referencia) */
+/* Abajo: controles de giro (como en la referencia) */
 .hero-bottom {
   position: absolute;
   left: 0; right: 0;
@@ -223,7 +223,6 @@ body.scrolled .mini { opacity: 1; }
   pointer-events: none;
 }
 .hero-bottom > * { pointer-events: auto; }
-.drop { display: flex; flex-direction: column; gap: 12px; align-items: center; }
 
 /* Cuenta atrás: cifras estrechas y finas, plata, con rótulos mínimos */
 .count { display: flex; align-items: stretch; }
@@ -316,6 +315,9 @@ body.exploring .hero-bottom, body.exploring .top, body.exploring .labels { opaci
 
 /* Etiquetas sobre cada prenda */
 .labels { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+/* Zona táctil invisible sobre el símbolo: el dedo lo gira sin mover la página */
+.logo-grip { position: absolute; display: none; touch-action: none; }
+.logo-grip.show { display: block; pointer-events: auto; }
 .tag {
   position: absolute; left: 0; top: 0;
   display: inline-flex; align-items: center; gap: 8px;

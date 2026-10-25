@@ -23,7 +23,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { createGarment, HOOK_CENTER } from "./garment.js";
-import { marbleTexture, flutedNormal, smokedOakTexture, plaqueTexture, haloTexture } from "./textures.js";
+import { marbleTexture, flutedNormal, smokedOakTexture, plaqueTexture, haloTexture, friezeTexture, cardTexture } from "./textures.js";
 
 export const ROOM = { radius: 5, height: 4.2, bays: 12 };
 
@@ -38,7 +38,14 @@ const NICHE = { w: 1.6, h: 2.9, y0: 0.32, depth: 0.66 };
 /** El ángulo (en radianes) en el que está cada módulo de pared. */
 export const bayAngle = (i) => i * BAY;
 
-export function createRoom({ obras, pieces }) {
+/* Friso del museo: lo que se lee en lo alto de cada módulo, empezando por el escaparate. */
+const FRIEZE = [
+  "MUSEO DE ARTE", "SALA I · GÉNESIS", "COLECCIÓN PERMANENTE", "HECHO A MANO",
+  "TELAS ELEGIDAS UNA A UNA", "MUSEO DE MODA", "CHART NOIR · MUSEO DE ARTE", "UNA SOLA VEZ",
+  "OBRAS ÚNICAS · 1/1", "LOS QUE ESTABAN, LO SABEN", "NO ES PARA TODOS", "CHART NOIR",
+];
+
+export function createRoom({ obras, pieces, photos = [] }) {
   const group = new THREE.Group();
   const reflective = [];
   const power = []; // luces que se encienden en la entrada: { delay, set(v) }
@@ -107,8 +114,8 @@ export function createRoom({ obras, pieces }) {
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.y = H;
   group.add(ceiling);
-  const recessMat = new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.9, emissive: 0x1d1e21 });
-  power.push({ delay: 0.2, set: (v) => recessMat.emissive.setScalar((0x1d / 255) * v) });
+  const recessMat = new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.9, emissive: 0x0d0d0f });
+  power.push({ delay: 0.2, set: (v) => recessMat.emissive.setScalar((0x0d / 255) * v) });
   const recess = new THREE.Mesh(new THREE.CircleGeometry(2.45, 128), recessMat);
   recess.rotation.x = Math.PI / 2;
   recess.position.y = H + 0.32;
@@ -116,6 +123,20 @@ export function createRoom({ obras, pieces }) {
   const recessWall = new THREE.Mesh(new THREE.CylinderGeometry(2.45, 2.45, 0.32, 128, 1, true), new THREE.MeshStandardMaterial({ color: 0x1c1d20, roughness: 0.9, side: THREE.BackSide }));
   recessWall.position.y = H + 0.16;
   group.add(recessWall);
+  // Artesonado de la cúpula: aros y radios de acero sobre la lámpara.
+  for (const r of [0.9, 1.5, 2.1]) {
+    const c = new THREE.Mesh(new THREE.TorusGeometry(r, 0.012, 8, 160), chrome);
+    c.rotation.x = Math.PI / 2;
+    c.position.y = H + 0.31;
+    group.add(c);
+  }
+  for (let k = 0; k < 24; k++) {
+    const a = (k / 24) * Math.PI * 2;
+    const rib = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.018, 1.5), lacquer);
+    rib.position.set(Math.sin(a) * 1.65, H + 0.31, Math.cos(a) * 1.65);
+    rib.rotation.y = a;
+    group.add(rib);
+  }
   const ring = new THREE.Mesh(new THREE.TorusGeometry(2.38, 0.02, 10, 220), glow(1, 0.15));
   ring.rotation.x = Math.PI / 2;
   ring.position.y = H + 0.03;
@@ -177,12 +198,51 @@ export function createRoom({ obras, pieces }) {
     const seam = new THREE.Mesh(new THREE.BoxGeometry(0.008, H - 0.62, 0.008), glow(0.55, d));
     seam.position.set(BAY_W / 2, (H - 0.62) / 2 + 0.2, z + 0.165);
     bay.add(seam);
+    // Friso con letras de museo, retroiluminadas, en la cornisa.
+    const fm = new THREE.MeshStandardMaterial({ map: friezeTexture(FRIEZE[i]), roughness: 0.4, metalness: 0.5, emissive: 0xffffff });
+    fm.emissiveMap = fm.map;
+    const lit = i === 0 || i === 6 ? 0.85 : 0.55;
+    power.push({ delay: 0.5 + i * 0.075, set: (v) => { fm.emissiveIntensity = lit * v; } });
+    const fr = new THREE.Mesh(new THREE.PlaneGeometry(BAY_W - 0.12, (BAY_W - 0.12) * (96 / 1024)), fm);
+    fr.position.set(0, H - 0.17, z + 0.141);
+    bay.add(fr);
+  }
+
+  /* ---------- Raíl de focos de museo, colgado bajo las vigas ---------- */
+  const track = new THREE.Mesh(new THREE.TorusGeometry(3.55, 0.016, 8, 240), chrome);
+  track.rotation.x = Math.PI / 2;
+  track.position.y = H - 0.2;
+  group.add(track);
+  const headMat = new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.35, metalness: 0.6 });
+  const headGeo = new THREE.CylinderGeometry(0.038, 0.032, 0.15, 24);
+  const lensGeo = new THREE.CircleGeometry(0.03, 24);
+  for (let k = 0; k < ROOM.bays * 2; k++) {
+    const a = (k + 0.5) * (BAY / 2);
+    const head = new THREE.Group();
+    head.position.set(Math.sin(a) * 3.55, H - 0.25, -Math.cos(a) * 3.55);
+    // Cada foco apunta a la pared que tiene delante, a media altura.
+    head.lookAt(Math.sin(a) * APOTHEM, 1.6, -Math.cos(a) * APOTHEM);
+    const body = new THREE.Mesh(headGeo, headMat);
+    body.rotation.x = Math.PI / 2;
+    head.add(body);
+    const lens = new THREE.Mesh(lensGeo, glow(0.9, 1.0 + k * 0.035));
+    lens.position.z = 0.076;
+    head.add(lens);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.05, 6), chrome);
+    stem.position.set(head.position.x, H - 0.2 - 0.025, head.position.z);
+    group.add(head, stem);
+  }
+  for (let k = 0; k < 6; k++) {
+    const a = k * (Math.PI / 3) + BAY / 2;
+    const hanger = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.15, 6), chrome);
+    hanger.position.set(Math.sin(a) * 3.55, H - 0.125, -Math.cos(a) * 3.55);
+    group.add(hanger);
   }
 
   /* ---------- Módulos ---------- */
   const displays = [];
   const reg = (delay, set) => power.push({ delay, set });
-  const M = { lacquer, fluted, matte, chrome, marbleMat, oak, glow, lamp, reg };
+  const M = { lacquer, fluted, matte, chrome, marbleMat, oak, glow, lamp, reg, power };
   const evenBays = [0, 2, 10, 4, 8, 6]; // el escaparate principal y luego a los lados
   const piecesByObra = new Map();
   for (const p of pieces) {
@@ -200,9 +260,21 @@ export function createRoom({ obras, pieces }) {
       const obra = used.get(i);
       const d = buildShowcase(bay, M, obra, piecesByObra.get(obra.id) || [], i === 0);
       displays.push({ ...d, obra, angle: bayAngle(i), bay });
+      if (i === 0) buildMuseumFront(bay, M, obra);
+    } else if (i === 6 && photos.length) {
+      buildGalleryWall(bay, M, obras[0], photos);
     } else {
       buildFabricLibrary(bay, M, i);
     }
+  }
+
+  /* ---------- Bancos de museo frente al escaparate y frente a la pared del taller ---------- */
+  for (const k of [0, 6]) {
+    const bench = makeBench(chrome);
+    const a = bayAngle(k);
+    bench.position.set(Math.sin(a) * 2.75, 0, -Math.cos(a) * 2.75);
+    bench.rotation.y = -a;
+    group.add(bench);
   }
 
   /* ---------- Luz general ---------- */
@@ -390,6 +462,8 @@ const foldMat = (c) => {
   return foldMats.get(c);
 };
 const foldGeo = new RoundedBoxGeometry(0.36, 0.046, 0.27, 3, 0.018);
+const rollGeo = new THREE.CylinderGeometry(0.105, 0.105, 0.5, 40);
+const coreGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.52, 16);
 
 function buildFabricLibrary(bay, m, seed) {
   const size = NICHE;
@@ -413,12 +487,182 @@ function buildFabricLibrary(bay, m, seed) {
       }
     }
   });
+  // Rollos de tela tumbados en la parte baja (burdeos, hueso, negro…).
+  const rollColors = [0x4c0a18, 0xe9e3d7, 0x141414, 0x5f5d5b];
+  [[-0.42, 0.485], [0.0, 0.485], [0.42, 0.485], [-0.21, 0.67], [0.21, 0.67]].forEach(([x, y], k) => {
+    const c = rollColors[(k + seed) % rollColors.length];
+    const roll = new THREE.Mesh(rollGeo, foldMat(c));
+    roll.rotation.x = Math.PI / 2;
+    roll.position.set(x, y, zWall - size.depth / 2 - 0.02);
+    bay.add(roll);
+    const core = new THREE.Mesh(coreGeo, m.chrome);
+    core.rotation.x = Math.PI / 2;
+    core.position.copy(roll.position);
+    bay.add(core);
+  });
+  const plaque = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.4, 0.1),
+    new THREE.MeshStandardMaterial({ map: plaqueTexture(["ARCHIVO DE TELAS", "SELECCIONADAS A MANO"]), metalness: 0.9, roughness: 0.35 }),
+  );
+  plaque.position.set(0, size.y0 - 0.1, zWall + 0.05);
+  bay.add(plaque);
+
   const target = new THREE.Object3D();
   target.position.set(0, 1.6, zBack + 0.3);
   const spot = m.lamp(new THREE.SpotLight(0xffffff, 9, 5, 0.6, 0.7, 1.6), delay + 0.1);
   spot.position.set(0, top - 0.03, zWall + 0.3);
   spot.target = target;
   bay.add(spot, target);
+}
+
+/* Delante del escaparate principal, como en un museo: cordón de terciopelo
+   entre dos postes de acero y un atril con la cartela de la obra. */
+function buildMuseumFront(bay, m, obra) {
+  const z = -APOTHEM + 0.85;
+  const velvet = new THREE.MeshPhysicalMaterial({ color: 0x4c0a18, roughness: 0.75, sheen: 1, sheenColor: new THREE.Color(0x8e1426), sheenRoughness: 0.5 });
+  const posts = [-0.72, 0.72];
+  for (const x of posts) {
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.03, 48), m.chrome);
+    base.position.set(x, 0.015, z);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.9, 24), m.chrome);
+    pole.position.set(x, 0.48, z);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.035, 24, 16), m.chrome);
+    ball.position.set(x, 0.95, z);
+    bay.add(base, pole, ball);
+  }
+  // Cordón con su caída natural (catenaria).
+  const pts = [];
+  for (let k = 0; k <= 24; k++) {
+    const u = k / 24;
+    pts.push(new THREE.Vector3(-0.72 + u * 1.44, 0.89 - Math.sin(u * Math.PI) * 0.17, z));
+  }
+  const rope = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 48, 0.019, 12), velvet);
+  bay.add(rope);
+
+  // Atril con la cartela, a la derecha del cordón.
+  const x = 1.12, lz = z + 0.05;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.025, 40), m.chrome);
+  base.position.set(x, 0.0125, lz);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1.0, 16), m.chrome);
+  pole.position.set(x, 0.5, lz);
+  bay.add(base, pole);
+  const nombres = obra.piezas.map((p) => p.nombre.toLowerCase());
+  const tex = cardTexture([
+    [`OBRA ${obra.numero}`, 22, 600, 10, { track: 5 }],
+    [obra.nombre, 62, 600, 2, { narrow: true }],
+    ["Chart Noir · 2026", 22, 400, 26],
+    [`${nombres.join(" y ").replace(/^./, (c) => c.toUpperCase())}. Hecho a mano con telas seleccionadas una a una, doble forro.`, 23, 400, 22],
+    [`Pieza única ${obra.edicion} · Talla ${obra.talla}`, 21, 500, 12],
+    ["Colección permanente · Sala I", 19, 400, 0, { color: "#6d6966" }],
+  ]);
+  const card = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.24, 0.3),
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.22 }),
+  );
+  const holder = new THREE.Group();
+  holder.position.set(x, 1.04, lz);
+  holder.rotation.x = -0.6; // inclinada hacia quien la lee
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.33, 0.012), m.lacquer);
+  plate.position.z = -0.008;
+  card.position.z = 0.0005;
+  holder.add(plate, card);
+  bay.add(holder);
+}
+
+/* Pared del taller: texto de sala de museo y las fotos del proceso
+   enmarcadas como obras, cada una con su luz de cuadro. */
+function buildGalleryWall(bay, m, obra, photos) {
+  const size = SHOWCASE;
+  const delay = 1.55;
+  const { zWall, zBack, top } = buildNicheShell(bay, m, { ...size, depth: 0.32 }, delay, { coves: false });
+  const board = box(bay, new THREE.MeshStandardMaterial({ color: 0x0e0e10, roughness: 0.88 }), size.w - 0.16, size.h - 0.2, 0.012, 0, size.y0 + size.h / 2, zBack + 0.016);
+  board.receiveShadow = true;
+  const zf = zBack + 0.03;
+
+  // Texto de sala, en plata sobre negro.
+  const wallTex = cardTexture([
+    ["CHART NOIR", 34, 500, 14, { track: 14, color: "#8a8784" }],
+    ["MUSEO DE ARTE", 118, 600, 6, { narrow: true, color: "#e2e4e8" }],
+    ["SALA I · EL TALLER", 30, 500, 34, { track: 10, color: "#8a8784" }],
+    ["Cada prenda es una obra. Se corta, se cose y se forra a mano, con telas elegidas una a una. Se hace una sola vez.", 32, 400, 0, { color: "#a9a6a2" }],
+  ], { w: 1024, h: 560, bg: "#0e0e10", pad: 60, top: 90 });
+  const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.6, emissive: 0xffffff, emissiveMap: wallTex });
+  m.reg(delay + 0.2, (v) => { wallMat.emissiveIntensity = 0.5 * v; });
+  const text = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5 * (560 / 1024)), wallMat);
+  text.position.set(0, 2.92, zf);
+  bay.add(text);
+
+  // Las fotos del proceso, con marco negro, paspartú y luz de cuadro.
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.35, metalness: 0.3 });
+  const matMat = new THREE.MeshStandardMaterial({ color: 0xe9e5de, roughness: 0.9 });
+  const n = Math.min(2, photos.length);
+  photos.slice(0, n).forEach((ph, k) => {
+    const x = n === 1 ? 0 : (k - 0.5) * 0.8;
+    const pw = 0.5;
+    const phH = Math.min(0.9, pw * (ph.texture.image.height / ph.texture.image.width));
+    const fw = pw + 0.16, fh = phH + 0.16, cy = 1.5;
+    box(bay, frameMat, fw + 0.04, fh + 0.04, 0.04, x, cy, zf + 0.02);
+    box(bay, matMat, fw, fh, 0.004, x, cy, zf + 0.042);
+    const pic = new THREE.Mesh(new THREE.PlaneGeometry(pw, phH), new THREE.MeshStandardMaterial({ map: ph.texture, roughness: 0.7 }));
+    pic.position.set(x, cy, zf + 0.0445);
+    bay.add(pic);
+    // Luz de cuadro: barra de acero con línea de luz encima del marco.
+    const lampY = cy + fh / 2 + 0.12;
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, fw * 0.75, 16), m.chrome);
+    bar.rotation.z = Math.PI / 2;
+    bar.position.set(x, lampY, zf + 0.14);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.12, 8), m.chrome);
+    arm.rotation.x = Math.PI / 2;
+    arm.position.set(x, lampY, zf + 0.08);
+    const line = new THREE.Mesh(new THREE.BoxGeometry(fw * 0.7, 0.004, 0.006), m.glow(1, delay + 0.1 + k * 0.08));
+    line.position.set(x, lampY - 0.014, zf + 0.14);
+    bay.add(bar, arm, line);
+    const t = new THREE.Object3D();
+    t.position.set(x, cy - 0.1, zf);
+    const light = m.lamp(new THREE.SpotLight(0xffffff, 5, 2.2, 0.75, 0.6, 1.6), delay + 0.1 + k * 0.08);
+    light.position.set(x, lampY - 0.03, zf + 0.22);
+    light.target = t;
+    bay.add(light, t);
+    // Cartela pequeña bajo cada foto.
+    const ctex = cardTexture([
+      [`${String(k + 1).padStart(2, "0")} · PROCESO`, 30, 600, 14, { track: 6 }],
+      [ph.texto, 30, 400, 0],
+    ], { w: 512, h: 220, top: 60, pad: 36 });
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.086), new THREE.MeshStandardMaterial({ map: ctex, roughness: 0.85, emissive: 0xffffff, emissiveMap: ctex, emissiveIntensity: 0.2 }));
+    card.position.set(x + fw / 2 - 0.1, cy - fh / 2 - 0.12, zf + 0.004);
+    bay.add(card);
+  });
+
+  const plaque = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.4, 0.1),
+    new THREE.MeshStandardMaterial({ map: plaqueTexture(["SALA I · EL TALLER", `OBRA ${obra.numero} · ${obra.nombre.toUpperCase()}`]), metalness: 0.9, roughness: 0.35 }),
+  );
+  plaque.position.set(0, size.y0 - 0.1, zWall + 0.05);
+  bay.add(plaque);
+  const wash = m.lamp(new THREE.SpotLight(0xffffff, 6, 5, 0.55, 0.8, 1.6), delay);
+  wash.position.set(0, top - 0.03, zWall + 0.4);
+  const wt = new THREE.Object3D();
+  wt.position.set(0, 2.6, zBack);
+  wash.target = wt;
+  bay.add(wash, wt);
+}
+
+/* Banco de museo: asiento de piel negra sobre patas de acero. */
+function makeBench(chrome) {
+  const g = new THREE.Group();
+  const leather = new THREE.MeshPhysicalMaterial({ color: 0x101012, roughness: 0.5, clearcoat: 0.3, clearcoatRoughness: 0.4, sheen: 0.4, sheenColor: new THREE.Color(0x303034) });
+  const seat = new THREE.Mesh(new RoundedBoxGeometry(1.4, 0.1, 0.44, 4, 0.04), leather);
+  seat.position.y = 0.42;
+  g.add(seat);
+  for (const x of [-0.6, 0.6]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.37, 0.38), chrome);
+    leg.position.set(x, 0.185, 0);
+    g.add(leg);
+  }
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.02, 0.02), chrome);
+  bar.position.y = 0.08;
+  g.add(bar);
+  return g;
 }
 
 /* Armario cerrado: dos puertas de laca acanalada, tiradores largos y haz de luz. */
