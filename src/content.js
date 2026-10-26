@@ -63,6 +63,9 @@ export function createPieceDialog(redes, { onBid }) {
   const img = document.getElementById("piece-img");
   const other = document.getElementById("piece-other");
   const cta = document.getElementById("piece-cta");
+  const prev = document.getElementById("piece-prev");
+  const next = document.getElementById("piece-next");
+  const count = document.getElementById("piece-count");
   let current = null;
 
   function open(obra, pieza) {
@@ -88,9 +91,30 @@ export function createPieceDialog(redes, { onBid }) {
     other.hidden = rest.length === 0;
     if (rest.length) other.textContent = `Ver ${rest[0].nombre.toLowerCase()}`;
 
+    // Flechas ‹ › y contador: de una pieza a otra sin salir de la ficha.
+    const n = obra.piezas.length;
+    const i = obra.piezas.indexOf(pieza);
+    prev.hidden = next.hidden = n < 2;
+    count.textContent = n > 1 ? `${String(i + 1).padStart(2, "0")} / ${String(n).padStart(2, "0")} · ${pieza.nombre}` : "";
+
     if (!dialog.open) dialog.showModal();
     dialog.scrollTop = 0;
   }
+
+  const step = (d) => {
+    if (!current) return;
+    const list = current.obra.piezas;
+    const i = list.indexOf(current.pieza);
+    open(current.obra, list[(i + d + list.length) % list.length]);
+  };
+  prev.addEventListener("click", () => step(-1));
+  next.addEventListener("click", () => step(1));
+  document.getElementById("piece-back").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("keydown", (e) => {
+    if (e.target.closest?.("input, textarea")) return;
+    if (e.key === "ArrowLeft") { step(-1); e.preventDefault(); }
+    else if (e.key === "ArrowRight") { step(1); e.preventDefault(); }
+  });
 
   other.addEventListener("click", () => {
     const rest = current.obra.piezas.filter((p) => p !== current.pieza);

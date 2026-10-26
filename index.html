@@ -216,8 +216,14 @@
 
   <!-- ===== Ficha de una pieza ===== -->
   <dialog class="piece" id="piece" aria-labelledby="piece-name">
-    <button class="piece-close" type="button" id="piece-close" aria-label="Cerrar">Cerrar</button>
-    <div class="piece-media"><img id="piece-img" alt=""></div>
+    <button class="piece-back" type="button" id="piece-back" aria-label="Volver a la web"><span aria-hidden="true">←</span> Volver</button>
+    <button class="piece-close" type="button" id="piece-close" aria-label="Cerrar">Cerrar <span aria-hidden="true">✕</span></button>
+    <div class="piece-media">
+      <button class="round piece-arrow piece-prev" type="button" id="piece-prev" aria-label="Pieza anterior">‹</button>
+      <img id="piece-img" alt="">
+      <button class="round piece-arrow piece-next" type="button" id="piece-next" aria-label="Pieza siguiente">›</button>
+      <p class="piece-count" id="piece-count" aria-live="polite"></p>
+    </div>
     <div class="piece-info">
       <p class="eyebrow" id="piece-obra"></p>
       <h2 class="title" id="piece-name"></h2>

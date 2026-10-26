@@ -677,6 +677,46 @@ body.entered .hero-bottom { transition-delay: 0.2s; }
   color: var(--humo);
 }
 .piece-close:hover { color: var(--hueso); }
+/* Volver (arriba a la izquierda) y flechas ‹ › para pasar de una pieza a otra */
+.piece-back {
+  position: fixed;
+  top: calc(20px + var(--safe-top));
+  left: max(var(--gutter), var(--safe-left));
+  z-index: 2;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--hueso);
+}
+.piece-back span, .piece-close span { font-size: 15px; letter-spacing: 0; }
+.piece-back:hover { color: var(--plata); }
+.piece-back:focus, .piece-close:focus { outline: none; }
+.piece-back:focus-visible, .piece-close:focus-visible { outline: 1px solid var(--humo); outline-offset: 6px; }
+.piece-media { position: relative; }
+.piece-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+}
+.piece-prev { left: max(var(--gutter), var(--safe-left)); }
+.piece-next { right: var(--gutter); }
+.piece-count {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 14px;
+  margin: 0;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--humo);
+}
 .piece-media {
   display: grid; place-items: center;
   min-height: 60svh;
@@ -814,7 +854,7 @@ body.entered .hero-bottom { transition-delay: 0.2s; }
 
   .claim { grid-template-columns: 1fr; }
   .piece[open] { display: block; }
-  .piece-media { min-height: 0; padding-bottom: 0; }
+  .piece-media { min-height: 0; padding-bottom: 36px; }
   .piece-media img { max-height: 50svh; margin: 0 auto; }
 }
 

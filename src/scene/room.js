@@ -23,7 +23,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { createWornOutfit } from "./garment.js";
-import { marbleTexture, flutedNormal, smokedOakTexture, plaqueTexture, haloTexture, friezeTexture, cardTexture } from "./textures.js";
+import { marbleTexture, flutedNormal, smokedOakTexture, plaqueTexture, haloTexture, friezeTexture, cardTexture, ringTextTexture } from "./textures.js";
 
 export const ROOM = { radius: 5, height: 4.2, bays: 12 };
 
@@ -114,8 +114,8 @@ export function createRoom({ obras, pieces, photos = [], fabrics = new Map() }) 
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.y = H;
   group.add(ceiling);
-  const recessMat = new THREE.MeshStandardMaterial({ color: 0x18191b, roughness: 0.9, emissive: 0x0d0d0f });
-  power.push({ delay: 0.2, set: (v) => recessMat.emissive.setScalar((0x0d / 255) * v) });
+  const recessMat = new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.9, emissive: 0x040405 });
+  power.push({ delay: 0.2, set: (v) => recessMat.emissive.setScalar((0x04 / 255) * v) });
   const recess = new THREE.Mesh(new THREE.CircleGeometry(2.45, 128), recessMat);
   recess.rotation.x = Math.PI / 2;
   recess.position.y = H + 0.32;
@@ -275,6 +275,102 @@ export function createRoom({ obras, pieces, photos = [], fabrics = new Map() }) 
     bench.position.set(Math.sin(a) * 2.75, 0, -Math.cos(a) * 2.75);
     bench.rotation.y = -a;
     group.add(bench);
+  }
+
+  /* ---------- Aura: lo que hace la sala majestuosa ---------- */
+  // Medallón en el suelo, bajo el símbolo: estrella de acero, aro de luz empotrado
+  // y un anillo de letras grabadas, como en la rotonda de un gran museo.
+  for (let k = 0; k < 24; k++) {
+    const a = (k / 24) * Math.PI * 2;
+    const len = k % 2 ? 0.42 : 0.6;
+    const ray = new THREE.Mesh(new THREE.PlaneGeometry(k % 2 ? 0.008 : 0.012, len), chrome);
+    ray.rotation.x = -Math.PI / 2;
+    ray.rotation.z = -a;
+    const mid = 0.18 + len / 2;
+    ray.position.set(Math.sin(a) * mid, 0.003, -Math.cos(a) * mid);
+    group.add(ray);
+  }
+  flat(new THREE.RingGeometry(0.16, 0.172, 96), chrome, 0.003);
+  const inlay = new THREE.Mesh(new THREE.RingGeometry(1.565, 1.578, 220), glow(0.95, 1.9));
+  inlay.rotation.x = -Math.PI / 2;
+  inlay.position.y = 0.003;
+  group.add(inlay);
+  const TEXT_IN = 0.95, TEXT_OUT = 1.45;
+  const ringTex = ringTextTexture("CHART NOIR · MUSEO DE ARTE · SALA I · HECHO A MANO · UNA SOLA VEZ · COLECCIÓN PERMANENTE · ", 1.2, TEXT_OUT);
+  const ringMat = new THREE.MeshStandardMaterial({ map: ringTex, transparent: true, depthWrite: false, metalness: 0.6, roughness: 0.35, emissive: 0xffffff, emissiveMap: ringTex });
+  power.push({ delay: 1.95, set: (v) => { ringMat.emissiveIntensity = 0.45 * v; } });
+  const ringText = new THREE.Mesh(new THREE.RingGeometry(TEXT_IN, TEXT_OUT, 220, 1), ringMat);
+  ringText.rotation.x = -Math.PI / 2;
+  ringText.position.y = 0.004;
+  group.add(ringText);
+
+  // Línea de luz a ras de suelo, al pie de las paredes: la sala entera "flota".
+  for (let i = 0; i < ROOM.bays; i++) {
+    const bay = makeBay(group, i);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(BAY_W - 0.02, 0.006, 0.006), glow(0.7, 0.3 + i * 0.075));
+    strip.position.set(0, 0.008, -APOTHEM + 0.14);
+    bay.add(strip);
+  }
+
+  // Cúpula estrellada: puntos de luz en el techo (club privado de noche).
+  {
+    const N = 150;
+    const r = rng(41);
+    const starMat = glow(1, 2.2);
+    const stars = new THREE.InstancedMesh(new THREE.CircleGeometry(0.0055, 8), starMat, N);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
+    const sc = new THREE.Vector3();
+    for (let k = 0; k < N; k++) {
+      const rad = 0.25 + Math.sqrt(r()) * 2.1;
+      const a = r() * Math.PI * 2;
+      const size = 0.5 + r() * r() * 1.4;
+      sc.setScalar(size);
+      m4.compose(new THREE.Vector3(Math.sin(a) * rad, H + 0.316, Math.cos(a) * rad), q, sc);
+      stars.setMatrixAt(k, m4);
+    }
+    group.add(stars);
+  }
+
+  // Cascada de cristales: varillas de acero con punta de luz colgando de la lámpara.
+  {
+    const rows = [[1.6, H + 0.28, 40, 0.42], [1.25, H + 0.22, 30, 0.34], [0.95, H + 0.04, 24, 0.22], [0.42, H - 0.2, 12, 0.1]];
+    const total = rows.reduce((n, [, , c]) => n + c, 0);
+    const rodGeo = new THREE.CylinderGeometry(0.0022, 0.0022, 1, 5);
+    rodGeo.translate(0, -0.5, 0);
+    const rods = new THREE.InstancedMesh(rodGeo, chrome, total);
+    const tips = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.011, 0), glow(1, 2.0), total);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+    let n = 0;
+    rows.forEach(([rad, y, count, len]) => {
+      for (let k = 0; k < count; k++) {
+        const a = ((k + (rad > 1 ? 0.5 : 0)) / count) * Math.PI * 2;
+        const l = len * (0.75 + 0.25 * Math.sin(k * 2.399));
+        const x = Math.sin(a) * rad, z = Math.cos(a) * rad;
+        m4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(1, l, 1));
+        rods.setMatrixAt(n, m4);
+        m4.compose(new THREE.Vector3(x, y - l - 0.01, z), q, new THREE.Vector3(1, 1.6, 1));
+        tips.setMatrixAt(n, m4);
+        n++;
+      }
+    });
+    group.add(rods, tips);
+  }
+
+  // Portal de luz alrededor del escaparate principal: una línea fina que lo enmarca
+  // por arriba y baja por los lados, por delante de las columnas.
+  {
+    const bay = makeBay(group, 0);
+    const z = -APOTHEM + 0.17;
+    const w = SHOWCASE.w + 0.52, top = SHOWCASE.y0 + SHOWCASE.h + 0.16;
+    const mat = glow(1, 1.2);
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(w, 0.008, 0.008), mat);
+    lintel.position.set(0, top, z);
+    bay.add(lintel);
+    for (const sx of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.008, top - 0.02, 0.008), mat);
+      post.position.set(sx * w / 2, (top - 0.02) / 2 + 0.02, z);
+      bay.add(post);
+    }
   }
 
   /* ---------- Luz general ---------- */
@@ -679,12 +775,21 @@ function buildWardrobe(bay, m, i) {
       bay.add(post);
     }
   }
+  // Luz que se escapa entre las dos puertas: algo se guarda dentro.
+  const leak = new THREE.Mesh(new THREE.BoxGeometry(0.004, doorH - 0.04, 0.004), m.glow(0.85, 1.65 + i * 0.03));
+  leak.position.set(0, 0.15 + doorH / 2, z + 0.031);
+  bay.add(leak);
   const wash = m.lamp(new THREE.SpotLight(0xffffff, 42, 6, 0.6, 1, 1.6), 1.7 + i * 0.03);
   wash.position.set(0, H - 0.35, z + 0.5);
   const target = new THREE.Object3D();
   target.position.set(0, 0.6, z);
   wash.target = target;
   bay.add(wash, target);
+}
+
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
 
 function box(parent, mat, w, h, d, x, y, z) {

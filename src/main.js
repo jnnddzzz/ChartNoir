@@ -471,10 +471,18 @@ function frame(now) {
   // Tamaño: más pequeño, flotando en el centro de la sala.
   // (Siempre del mismo tamaño en pantalla, también al acercarse por arriba o por abajo.)
   const visW = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect * orbitDist;
-  const width = (portrait() ? 0.52 : 0.26) * visW;
+  const width = (portrait() ? 0.44 : 0.22) * visW;
   logo.position.copy(L);
   logo.position.y += reduce ? 0 : Math.sin(t * 0.9) * 0.02;
-  logo.scale.setScalar((width / 10) * (1 + (1 - k) * 0.6));
+  // Entrada: el símbolo aparece grande, se queda un instante y se encoge hasta su sitio.
+  let grand = 1;
+  if (!reduce && it >= LOGO_AT) {
+    const ms = (it - LOGO_AT) * 1000;
+    const shrink = Math.min(1, Math.max(0, (ms - 900) / 1700));
+    const e = shrink < 0.5 ? 4 * shrink ** 3 : 1 - Math.pow(-2 * shrink + 2, 3) / 2;
+    grand = 1 + (portrait() ? 1.05 : 2.3) * (1 - e);
+  }
+  logo.scale.setScalar((width / 10) * grand * (1 + (1 - k) * 0.25));
   // Orientación final = giro de la persona × de frente a la cámara (desde
   // cualquier lado: también desde arriba o desde abajo) × vuelta automática.
   qView.copy(camera.quaternion);
@@ -513,7 +521,7 @@ requestAnimationFrame(frame);
 
 function onIntroDone() {
   controls.state.enabled = true;
-  autoSpin.next = performance.now() + 2500; // la primera vuelta, poco después de entrar
+  autoSpin.next = performance.now() + 5500; // la primera vuelta, cuando ya se ha encogido y asentado
   hint.classList.add("show");
   setTimeout(() => { if (!document.body.classList.contains("exploring")) hint.classList.remove("show"); }, 5000);
 }

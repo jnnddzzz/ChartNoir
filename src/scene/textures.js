@@ -224,3 +224,43 @@ export function cardTexture(lines, { w = 512, h = 640, bg = "#efece6", fg = "#16
   t.anisotropy = 8;
   return t;
 }
+
+/** Anillo de letras grabadas en el suelo, alrededor del símbolo (para un RingGeometry
+    de radio exterior `outer`: el texto va en el radio `radius`). */
+export function ringTextTexture(text, radius, outer) {
+  const S = 2048;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const g = c.getContext("2d");
+  g.clearRect(0, 0, S, S);
+  const R = (radius / outer) * (S / 2);
+  g.font = "500 46px 'Archivo', 'Helvetica Neue', Arial, sans-serif";
+  if ("fontStretch" in g) g.fontStretch = "extra-condensed";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillStyle = "#e6e8ec";
+  // Repartimos las letras por toda la vuelta, con aire entre ellas.
+  const chars = [...text];
+  const widths = chars.map((ch) => g.measureText(ch).width + 14);
+  const total = widths.reduce((a, b) => a + b, 0);
+  const scale = (2 * Math.PI * R) / total;
+  let a = -Math.PI / 2;
+  chars.forEach((ch, i) => {
+    const w = widths[i] * scale;
+    const mid = a + w / (2 * R);
+    g.save();
+    g.translate(S / 2 + Math.cos(mid) * R, S / 2 + Math.sin(mid) * R);
+    g.rotate(mid + Math.PI / 2);
+    g.fillText(ch, 0, 0);
+    g.restore();
+    a += w / R;
+  });
+  // Dos filetes finos que enmarcan el texto.
+  g.strokeStyle = "rgba(201,204,209,0.55)";
+  g.lineWidth = 2;
+  for (const dr of [-44, 44]) { g.beginPath(); g.arc(S / 2, S / 2, R + dr, 0, Math.PI * 2); g.stroke(); }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
