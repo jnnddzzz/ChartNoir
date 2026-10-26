@@ -25,9 +25,10 @@ const DEPTH_MONOGRAM = 0.4;
 export function createLogo(envMap) {
   // Cara: plata pulida y luminosa. Poca rugosidad = reflejo nítido.
   const silver = new THREE.MeshPhysicalMaterial({
-    color: 0xeef0f3, metalness: 1, roughness: 0.12,
-    clearcoat: 0.5, clearcoatRoughness: 0.06,
-    envMap, envMapIntensity: 1.85,
+    // Pulido, pero no espejo perfecto: en pantallas pequeñas los reflejos finos centelleaban.
+    color: 0xeef0f3, metalness: 1, roughness: 0.18,
+    clearcoat: 0.35, clearcoatRoughness: 0.14,
+    envMap, envMapIntensity: 2.0,
   });
   // Cantos del monograma: plata satinada, para que el volumen se lea.
   const silverSide = new THREE.MeshStandardMaterial({
@@ -71,6 +72,7 @@ export function createLogo(envMap) {
   logo.add(inner);
   // Para girar los reflejos con el logo y medir dónde cae en pantalla.
   logo.userData.materials = [silver, silverSide, granate];
+  for (const m of [silver, silverSide, granate]) m.userData.baseEnv = m.envMapIntensity;
   logo.userData.box = new THREE.Box3().setFromObject(logo);
   return logo;
 }

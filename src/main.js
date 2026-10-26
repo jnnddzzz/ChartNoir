@@ -25,7 +25,6 @@ window.scrollTo(0, 0);
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const smooth = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
-const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
 const dir = (a, out = new THREE.Vector3()) => out.set(Math.sin(a), 0, -Math.cos(a));
 
 const canvas = document.getElementById("scene");
@@ -268,7 +267,7 @@ let journeyRaf = 0;
 function journey() {
   cancelAnimationFrame(journeyRaf);
   const from = window.scrollY;
-  const to = hero.offsetTop + hero.offsetHeight - window.innerHeight;
+  const to = hero.offsetTop + hero.offsetHeight - viewH();
   if (reduce) { window.scrollTo(0, to); return; }
   const dur = 4200 * Math.min(1, Math.abs(to - from) / Math.max(1, to - hero.offsetTop));
   const t0 = performance.now();
@@ -287,8 +286,12 @@ document.getElementById("journey").addEventListener("click", journey);
 
 // ---------- Scroll ----------
 let heroP = 0;
+// Altura de pantalla estable: la del bloque fijo de la portada (100svh). En el móvil,
+// window.innerHeight cambia al aparecer o esconderse la barra del navegador y hacía saltar la cámara.
+const heroSticky = hero.querySelector(".hero-sticky");
+const viewH = () => heroSticky.clientHeight || window.innerHeight;
 function onScroll() {
-  const vh = window.innerHeight;
+  const vh = viewH();
   const hr = hero.getBoundingClientRect();
   heroP = clamp01(-hr.top / (hr.height - vh));
   if (controls.coarse && !document.body.classList.contains("exploring")) controls.setExplore(heroP < 0.03);
@@ -374,18 +377,17 @@ function computeCamera(yaw, pitch, p) {
 }
 
 // ---------- Animación ----------
-// Entrada inmersiva: tras el corte a negro, la sala está a oscuras; las luces se
-// encienden en secuencia mientras la cámara baja desde el techo, y el símbolo
-// aparece al final con su frenazo seco.
-const LOGO_AT = 2.0;   // segundos hasta que aparece el símbolo
-const CAM_IN = 3.2;    // segundos que dura la bajada de la cámara
+// Entrada: tras el corte a negro, el símbolo ya está ahí, grande y brillando en la
+// oscuridad, muy cerca y de lado. Mientras se gira hacia nosotros y se aleja hasta su
+// sitio, la sala da una vuelta a su alrededor, se enciende luz a luz y se frena en seco.
+const INTRO = 3.6;     // segundos que dura la entrada
 let introStart = -1;
 let introDone = false;
 let last = performance.now();
 let currentYaw = null;
-const introFrom = new THREE.Vector3();
-const introLook = new THREE.Vector3();
 const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+const easeOutQuart = (x) => 1 - Math.pow(1 - x, 4);
+const easeInOutCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
 
 function frame(now) {
   requestAnimationFrame(frame);
@@ -424,32 +426,18 @@ function frame(now) {
   const pitchNow = Math.atan2(Math.sin(s.pitch), Math.cos(s.pitch)); // misma vista, sin vueltas acumuladas
   // Al bajar: primero la cámara viaja hasta la vitrina (60 % del scroll de la portada)…
   const fly = clamp01(heroP / 0.6);
-  computeCamera(currentYaw, pitchNow * (1 - fly), fly);
+  const ip = reduce ? 1 : Math.min(1, it / INTRO);
+  const swirl = -2.6 * (1 - easeOutQuart(ip)); // la sala gira alrededor del símbolo y se frena
+  computeCamera(currentYaw + swirl, pitchNow * (1 - fly), fly);
   // …y después el conjunto da una vuelta completa de 360°, al ritmo del scroll.
   if (three.displays[0]) three.displays[0].spin = Math.PI * 2 * (reduce ? 0 : smooth(0.62, 0.94, heroP));
 
-  // Bajada de la cámara en la entrada: de cerca del techo, mirando abajo, a su sitio.
-  if (it < CAM_IN) {
-    const e = easeOutCubic(Math.min(1, it / CAM_IN));
-    introFrom.copy(camPos).multiplyScalar(0.45);
-    introFrom.y = 3.6;
-    introLook.set(L.x, 0.2, L.z);
-    camPos.lerpVectors(introFrom, camPos, e);
-    camLook.lerpVectors(introLook, camLook, e);
-  }
-
-  // El símbolo aparece con su frenazo seco y una pequeña sacudida.
-  logo.visible = it >= LOGO_AT;
-  let k = 1, shake = 0;
-  if (!reduce && it >= LOGO_AT) {
-    const ms = (it - LOGO_AT) * 1000;
-    k = easeOutExpo(Math.min(1, ms / 900));
-    shake = ms < 380 ? (1 - ms / 380) * 0.035 : 0;
-  }
-  camPos.x += (Math.random() - 0.5) * shake;
-  camPos.y += (Math.random() - 0.5) * shake;
+  // La cámara empieza pegada al símbolo y se aleja hasta su sitio.
+  const dolly = 0.4 + 0.6 * easeOutCubic(ip);
+  camPos.sub(L).multiplyScalar(dolly).add(L);
+  logo.visible = true;
   camera.position.copy(camPos);
-  camera.up.copy(it < CAM_IN ? WORLD_UP : camUp);
+  camera.up.copy(camUp);
   camera.lookAt(camLook);
 
   // Giro del símbolo: inercia del arrastre y, al soltarlo, vuelta suave de frente.
@@ -475,27 +463,29 @@ function frame(now) {
   logo.position.copy(L);
   logo.position.y += reduce ? 0 : Math.sin(t * 0.9) * 0.02;
   // Entrada: el símbolo aparece grande, se queda un instante y se encoge hasta su sitio.
-  let grand = 1;
-  if (!reduce && it >= LOGO_AT) {
-    const ms = (it - LOGO_AT) * 1000;
-    const shrink = Math.min(1, Math.max(0, (ms - 900) / 1700));
-    const e = shrink < 0.5 ? 4 * shrink ** 3 : 1 - Math.pow(-2 * shrink + 2, 3) / 2;
-    grand = 1 + (portrait() ? 1.05 : 2.3) * (1 - e);
-  }
-  logo.scale.setScalar((width / 10) * grand * (1 + (1 - k) * 0.25));
+  // (El tamaño en pantalla no depende del acercamiento de la cámara: lo marca solo la entrada.)
+  const shrink = easeInOutCubic(Math.min(1, Math.max(0, (it - 0.5) / 2.9)));
+  const grand = reduce ? 1 : (1 + (portrait() ? 1.0 : 2.2) * (1 - shrink)) * dolly;
+  logo.scale.setScalar((width / 10) * grand);
   // Orientación final = giro de la persona × de frente a la cámara (desde
   // cualquier lado: también desde arriba o desde abajo) × vuelta automática.
   qView.copy(camera.quaternion);
-  qFace.setFromEuler(tmpEuler.set((1 - k) * 0.4, autoSpin.angle + (1 - k) * -1.2, 0, "YXZ"));
+  const turn = reduce ? 0 : 1 - easeOutCubic(Math.min(1, it / (INTRO * 0.9)));
+  qFace.setFromEuler(tmpEuler.set(turn * 0.42, autoSpin.angle - turn * 1.0, turn * 0.1, "YXZ"));
   logo.quaternion.copy(logoQ).multiply(qView).multiply(qFace);
   // Los reflejos de estudio acompañan a la cámara, con un barrido de luz lento.
-  const sweep = reduce ? 0 : Math.sin(t * 0.35) * 0.45;
+  const sweep = reduce ? 0 : Math.sin(t * 0.3) * 0.25;
   // El plató gira pegado al símbolo (con cualquier giro: arrastre, vuelta automática,
   // vista desde arriba o abajo): el metal brilla igual desde todos lados, sin saltos.
   // Three.js aplica la rotación con los ángulos en negativo y orden YXZ, así que la
   // descomponemos en orden ZXY: el resultado es justo la inversa del giro del símbolo.
   envEuler.setFromQuaternion(qEnv.copy(logo.quaternion).multiply(qSweep.setFromAxisAngle(WORLD_UP, sweep)), "ZXY");
-  for (const m of logo.userData.materials) m.envMapRotation.set(envEuler.x, envEuler.y, envEuler.z, "YXZ");
+  // En la entrada el metal brilla más fuerte (recién iluminado en la oscuridad) y se calma.
+  const gleam = reduce ? 1 : 1 + 0.9 * (1 - easeOutCubic(Math.min(1, it / INTRO)));
+  for (const m of logo.userData.materials) {
+    m.envMapRotation.set(envEuler.x, envEuler.y, envEuler.z, "YXZ");
+    m.envMapIntensity = m.userData.baseEnv * gleam;
+  }
 
   // El escaparate brilla un poco más bajo el cursor (cuando ya se han encendido las luces).
   if (introDone) {
@@ -507,7 +497,28 @@ function frame(now) {
   }
   room?.update(t);
   renderer.render(scene, camera);
+  adaptQuality(now);
   placeLabels();
+}
+/* Calidad automática: si el aparato no llega a ~40 imágenes por segundo, se baja la
+   resolución poco a poco (hasta 1×). Fluidez antes que píxeles: nada de tirones. */
+const quality = { frames: 0, since: 0, dpr: 0 };
+function adaptQuality(now) {
+  const r = three.renderer;
+  if (!quality.dpr) { quality.dpr = r.getPixelRatio(); quality.since = now; }
+  // Una pausa (pestaña oculta, portada fuera de pantalla) no cuenta como lentitud.
+  if (now - (quality.last || now) > 250) { quality.frames = 0; quality.since = now; }
+  quality.last = now;
+  quality.frames++;
+  if (now - quality.since < 1500) return;
+  const ms = (now - quality.since) / quality.frames;
+  quality.frames = 0;
+  quality.since = now;
+  if (ms > 25 && quality.dpr > 1) {
+    quality.dpr = Math.max(1, quality.dpr - 0.25);
+    r.setPixelRatio(quality.dpr);
+    r.setSize(canvas.clientWidth, canvas.clientHeight, false);
+  }
 }
 const tmpEuler = new THREE.Euler();
 const envEuler = new THREE.Euler();

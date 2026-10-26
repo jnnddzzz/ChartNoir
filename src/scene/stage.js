@@ -7,7 +7,9 @@ import { MAX_PIXEL_RATIO } from "../config.js";
 
 export function createStage(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
+  // En móvil, 1,5 como máximo (nítido y fluido); main.js lo baja solo si hace falta.
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : MAX_PIXEL_RATIO));
   renderer.setClearColor(0x000000, 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   // Tone mapping neutro: el plateado brilla sin quemarse y los negros siguen siendo negros.
