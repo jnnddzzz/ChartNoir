@@ -10,7 +10,7 @@
      el símbolo o en el modo "360°" (botón), donde el dedo gira libremente.
    ========================================================= */
 
-export function createControls(canvas, { step, onTap, onMove, onInteract, hitLogo, onLogoDrag }) {
+export function createControls(canvas, { step, onTap, onMove, onInteract, hitLogo, onLogoDrag, onSwipe }) {
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const state = {
     enabled: false,
@@ -38,6 +38,10 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
     // Ratón, touchpad o lápiz: giro libre en todas direcciones siempre (aunque la
     // pantalla también sea táctil). Con el dedo, en vertical se hace scroll salvo en modo 360°.
     state.free = e.pointerType !== "touch";
+    // Con el dedo, los primeros milímetros deciden: deslizar en vertical = bajar
+    // (como hacer scroll); hacia los lados = agarrar la sala (o el símbolo) y girarla
+    // en todas direcciones.
+    state.lock = e.pointerType === "touch" ? null : "look";
     moved = false;
     startX = lastX = e.clientX;
     startY = lastY = e.clientY;
@@ -62,6 +66,15 @@ export function createControls(canvas, { step, onTap, onMove, onInteract, hitLog
     lastX = e.clientX;
     lastY = e.clientY;
     if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 6) moved = true;
+    if (state.lock === null) {
+      const tx = e.clientX - startX, ty = e.clientY - startY;
+      if (Math.hypot(tx, ty) < 10) return;
+      if (Math.abs(ty) > Math.abs(tx) * 1.15) {
+        state.lock = "swipe";
+        onSwipe?.(ty < 0 ? "up" : "down");
+      } else state.lock = "look";
+    }
+    if (state.lock === "swipe") return;
     if (state.mode === "logo") {
       onLogoDrag?.(dx / Math.max(320, r.width), dy / Math.max(320, r.width));
       state.idleSince = performance.now();

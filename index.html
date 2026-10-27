@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Chart Noir</title>
   <meta name="description" content="Chart Noir. Prendas únicas hechas a mano, con telas elegidas una a una. Obra 001: pieza 1/1.">
   <meta name="theme-color" content="#000000">
@@ -73,6 +73,10 @@
         <p class="hint" id="hint" aria-hidden="true">Gira el símbolo · Arrastra fuera para girar la sala en cualquier dirección · Toca una prenda</p>
 
         <div class="hero-bottom" id="hero-bottom">
+          <button class="scroll-cue" type="button" id="scroll-cue" aria-label="Bajar hasta la vitrina">
+            <span class="cue-line" aria-hidden="true"></span>
+            <span class="cue-text" id="cue-text">Baja para entrar</span>
+          </button>
           <div class="hero-actions">
             <button class="round" type="button" id="turn-left" aria-label="Girar la sala a la izquierda">‹</button>
             <a class="pill" href="#obra">Ver Obra 001</a>

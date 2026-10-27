@@ -33,6 +33,8 @@
 [hidden] { display: none !important; } /* "hidden" gana siempre a cualquier display */
 
 html { scroll-padding-top: calc(var(--header-h) + var(--safe-top)); }
+/* Sin zoom por doble toque (se ampliaba sin querer y no había forma de volver). */
+html, body { touch-action: manipulation; }
 
 body {
   margin: 0;
@@ -256,6 +258,36 @@ body.scrolled .mini { opacity: 1; }
 @keyframes roll { from { transform: translateY(-100%); } to { transform: none; } }
 
 .hero-actions { display: flex; align-items: center; gap: 10px; }
+/* Indicador para bajar: una línea por la que cae una luz, y el texto. Se va al bajar. */
+.scroll-cue {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 0; border: 0; background: none; cursor: pointer;
+  color: var(--hueso);
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+body.entered .scroll-cue.show { opacity: 1; }
+.cue-text {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+.cue-line {
+  position: relative;
+  width: 1px; height: 34px;
+  overflow: hidden;
+  background: rgba(201, 204, 209, 0.22);
+}
+.cue-line::after {
+  content: "";
+  position: absolute; left: 0; top: -40%;
+  width: 1px; height: 40%;
+  background: var(--plata);
+  animation: cue 1.8s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+@keyframes cue { to { top: 100%; } }
+@media (prefers-reduced-motion: reduce) { .cue-line::after { animation: none; top: 30%; } }
 .round, .pill {
   height: 44px;
   border: 1px solid rgba(201, 204, 209, 0.28);

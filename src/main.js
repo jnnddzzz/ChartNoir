@@ -194,6 +194,8 @@ const controls = createControls(three ? canvas : hero, {
   },
   hitLogo: (x, y) => hitLogo(x, y),
   onLogoDrag: (dx, dy) => spinLogo(dx, dy),
+  // En táctil, arriba del todo: deslizar hacia arriba = bajar al conjunto (como en el ordenador).
+  onSwipe: (dir) => { if (dir === "up") journey(); },
 });
 
 /* ---------- El símbolo gira 360° en cualquier dirección ----------
@@ -257,7 +259,7 @@ if (controls.coarse && three) {
 // En táctil, arriba del todo (en la sala) el dedo gira la sala y el símbolo en todas
 // direcciones; para bajar está el botón ↓ (y, en cuanto se baja, el dedo vuelve a hacer scroll).
 if (controls.coarse) {
-  hint.textContent = "Gira la sala y el símbolo con el dedo, hacia cualquier lado · ↓ para bajar";
+  hint.textContent = "Arrastra hacia los lados para girar la sala y el símbolo";
 }
 exitBtn.addEventListener("click", () => setExplore(false));
 
@@ -283,6 +285,10 @@ const stopJourney = () => cancelAnimationFrame(journeyRaf);
 window.addEventListener("wheel", stopJourney, { passive: true });
 window.addEventListener("touchstart", stopJourney, { passive: true });
 document.getElementById("journey").addEventListener("click", journey);
+// Indicador para bajar: dice qué hacer según el aparato y lleva a la vitrina si se toca.
+const cue = document.getElementById("scroll-cue");
+document.getElementById("cue-text").textContent = controls.coarse ? "Desliza hacia arriba para entrar" : "Baja para entrar";
+cue.addEventListener("click", journey);
 
 // ---------- Scroll ----------
 let heroP = 0;
@@ -300,6 +306,7 @@ function onScroll() {
   heroBottom.style.pointerEvents = heroP > 0.2 ? "none" : "";
   heroCaption.classList.toggle("show", heroP > 0.95);
   if (heroP > 0.04) hint.classList.remove("show");
+  cue.classList.toggle("show", heroP < 0.02);
   document.body.classList.toggle("scrolled", hr.bottom < vh * 0.6);
 
   // El conjunto se separa mientras su sección está fija en pantalla.
@@ -476,14 +483,14 @@ function frame(now) {
   // Los reflejos de estudio acompañan a la cámara, con un barrido de luz lento.
   const sweep = reduce ? 0 : Math.sin(t * 0.3) * 0.25;
   // El plató gira pegado al símbolo (con cualquier giro: arrastre, vuelta automática,
-  // vista desde arriba o abajo): el metal brilla igual desde todos lados, sin saltos.
-  // Three.js aplica la rotación con los ángulos en negativo y orden YXZ, así que la
-  // descomponemos en orden ZXY: el resultado es justo la inversa del giro del símbolo.
-  envEuler.setFromQuaternion(qEnv.copy(logo.quaternion).multiply(qSweep.setFromAxisAngle(WORLD_UP, sweep)), "ZXY");
+  // vista desde arriba, desde abajo o boca abajo): el metal brilla igual desde todos
+  // lados, sin saltos. Three.js (r186) usa la inversa de envMapRotation para mirar el
+  // plató, así que basta con darle el mismo giro que tiene el símbolo.
+  qEnv.copy(logo.quaternion).multiply(qSweep.setFromAxisAngle(WORLD_UP, sweep));
   // En la entrada el metal brilla más fuerte (recién iluminado en la oscuridad) y se calma.
   const gleam = reduce ? 1 : 1 + 0.9 * (1 - easeOutCubic(Math.min(1, it / INTRO)));
   for (const m of logo.userData.materials) {
-    m.envMapRotation.set(envEuler.x, envEuler.y, envEuler.z, "YXZ");
+    m.envMapRotation.setFromQuaternion(qEnv);
     m.envMapIntensity = m.userData.baseEnv * gleam;
   }
 
@@ -521,7 +528,6 @@ function adaptQuality(now) {
   }
 }
 const tmpEuler = new THREE.Euler();
-const envEuler = new THREE.Euler();
 const qFace = new THREE.Quaternion();
 const qView = new THREE.Quaternion();
 const qEnv = new THREE.Quaternion();
@@ -563,7 +569,8 @@ function placeLabels() {
   three.logo.updateMatrixWorld();
   const lr = logoRect(cam, w, h);
   if (grip.isConnected) {
-    const on = three.logo.visible && heroP < 0.3 && document.body.classList.contains("revealed");
+    // Solo arriba del todo: en cuanto se baja, el dedo sobre el símbolo vuelve a hacer scroll.
+    const on = three.logo.visible && heroP < 0.03 && document.body.classList.contains("revealed");
     grip.classList.toggle("show", on);
     if (on) Object.assign(grip.style, {
       left: `${Math.round(lr.x0 + 16)}px`, top: `${Math.round(lr.y0 + 16)}px`,
