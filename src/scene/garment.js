@@ -262,7 +262,7 @@ function smoothEdges(rows, radius = 2) {
     pantalón, la cintura y luego cada pernera) es una sección redondeada por fila,
     con la costura exactamente en el borde. Abierta donde la prenda está abierta:
     bajos, cintura, cuello y sisas del chaleco. */
-function wornGeometry(image, w, h, kind) {
+function wornGeometry(image, w, h, kind, depthRatio = 0.17) {
   const ROWS = Math.min(200, Math.max(80, Math.round(130 * (h / w))));
   const COLS = 56;
   const scan = scanRows(image, ROWS);
@@ -280,7 +280,7 @@ function wornGeometry(image, w, h, kind) {
   }
   // Cada tubo: filas { l, r, y, depth(u) }. El chaleco es un solo tubo; el pantalón,
   // dos mitades de la cintura al bajo que se separan suave en la entrepierna.
-  const cap = 0.17 * w;
+  const cap = depthRatio * w; // un torso no es más hondo que esto
   const SISA = [0.07, 0.4];
   const openAt = (v) => (shoulders && v > SISA[0] && v < SISA[1] ? Math.sin(((v - SISA[0]) / (SISA[1] - SISA[0])) * Math.PI) : 0);
   const ellipse = (u, l, r, reach = 1) => {
@@ -404,10 +404,10 @@ function wornGeometry(image, w, h, kind) {
 }
 
 /** Una pieza "puesta": volumen de tela por fuera y forro negro por dentro. */
-function createWornPiece(piece, w, h, fabric) {
+function createWornPiece(piece, w, h, fabric, depthRatio) {
   const g = new THREE.Group();
   const kind = piece.percha === "pinza" ? "pinza" : "hombros";
-  const geo = wornGeometry(piece.texture.image, w, h, kind);
+  const geo = wornGeometry(piece.texture.image, w, h, kind, depthRatio);
   const normal = getWeaveNormal().clone();
   normal.repeat.set(w * 70, h * 70);
   normal.needsUpdate = true;
@@ -487,7 +487,7 @@ function useFabricOnSides(material, fabric, tileWidth) {
  * con una altura total `height`. Devuelve un grupo centrado en su origen.
  * @param {Array} pieces  [{ texture, pieza: { caja }, obra: { proporcion } }]
  */
-export function createWornOutfit(pieces, height, fabric = null) {
+export function createWornOutfit(pieces, height, fabric = null, { depthRatio } = {}) {
   const group = new THREE.Group();
   const parts = [];
   const prop = pieces[0]?.obra.proporcion || 0.5;
@@ -497,7 +497,7 @@ export function createWornOutfit(pieces, height, fabric = null) {
     const box = p.pieza.caja || { x: 0, y: 0, w: 100, h: 100 };
     const w = (box.w / 100) * setW;
     const h = w * (p.texture.image.height / p.texture.image.width);
-    const part = createWornPiece(p, w, h, fabric);
+    const part = createWornPiece(p, w, h, fabric, depthRatio);
     part.position.set(((box.x + box.w / 2) / 100 - 0.5) * setW, (0.5 - (box.y + box.h / 2) / 100) * setH, 0);
     part.userData.piece = p;
     group.add(part);

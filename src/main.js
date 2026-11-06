@@ -365,9 +365,10 @@ function computeCamera(yaw, pitch, p) {
   }
   camUp.lerp(WORLD_UP, smooth(0, 0.5, p)).normalize();
   const a = main.angle;
-  camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 1.7 : 1.35); // lejos: el conjunto entero cabe en pantalla
-  camFinal.y = 1.9;
+  camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 1.6 : 0.75); // lejos: la figura entera cabe en pantalla
+  camFinal.y = main.focus.y + 0.05;
   lookFinal.copy(main.focus);
+  if (port) lookFinal.y -= 0.38; // en vertical, la figura un poco más arriba: el rótulo final no tapa los pies
   // Curva que pasa por un lado del logo (nunca lo atraviesa).
   const side = tmp.set(Math.cos(a), 0, Math.sin(a));
   const sign = Math.sign(side.dot(camOrbit)) || 1;
