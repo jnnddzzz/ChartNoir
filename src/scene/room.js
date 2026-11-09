@@ -46,7 +46,7 @@ const FRIEZE = [
   "OBRAS ÚNICAS · 1/1", "LOS QUE ESTABAN, LO SABEN", "NO ES PARA TODOS", "CHART NOIR",
 ];
 
-export function createRoom({ obras, pieces, photos = [], fabrics = new Map() }) {
+export function createRoom({ obras, pieces, photos = [], fabrics = new Map(), genesis = null }) {
   const group = new THREE.Group();
   const reflective = [];
   const power = []; // luces que se encienden en la entrada: { delay, set(v) }
@@ -259,7 +259,7 @@ export function createRoom({ obras, pieces, photos = [], fabrics = new Map() }) 
       buildWardrobe(bay, M, i);
     } else if (used.has(i)) {
       const obra = used.get(i);
-      const d = buildShowcase(bay, M, obra, piecesByObra.get(obra.id) || [], i === 0, fabrics);
+      const d = buildShowcase(bay, M, obra, piecesByObra.get(obra.id) || [], i === 0, fabrics, i === 0 ? genesis : null);
       displays.push({ ...d, obra, angle: bayAngle(i), bay });
       if (i === 0) buildMuseumFront(bay, M, obra);
     } else if (i === 6 && photos.length) {
@@ -399,6 +399,7 @@ export function createRoom({ obras, pieces, photos = [], fabrics = new Map() }) 
     displays.forEach((d, k) => {
       d.float.position.y = d.floatY; // de pie: no flota
       d.float.rotation.y = d.spin + Math.sin(t * 0.35 + k) * 0.08 * (1 - Math.min(1, d.spin * 4));
+      d.genesis?.update(d.float.rotation.y, t);
     });
   }
 
@@ -458,16 +459,18 @@ function buildNicheShell(bay, m, size, delay, { coves = true } = {}) {
 /* Escaparate de una obra: un maniquí de plata con el conjunto puesto, de pie
    dentro de una cápsula de luz, delante de un halo retroiluminado.
    Puede girar 360° (spin). */
-function buildShowcase(bay, m, obra, pieces, main, fabrics) {
+function buildShowcase(bay, m, obra, pieces, main, fabrics, genesis) {
   const size = main ? SHOWCASE : NICHE;
   const delay = main ? 1.3 : 1.6;
   // El escaparate principal no lleva tiras en los cantos: ya tiene halo y columnas de luz.
   const { zWall, zBack, top } = buildNicheShell(bay, m, size, delay, { coves: !main });
   // El maniquí con la obra puesta, de pie en el suelo de la vitrina, a escala heroica.
   const base = size.y0 + 0.06;               // encima de la peana de mármol
-  const scale = main ? 1 : 0.88;
+  // Escala heroica: la figura mide 2,25 m (el modelo de Blender, 1,80 m).
+  const figH = genesis ? genesis.height : FIGURE.height;
+  const scale = (main ? 2.25 : 1.98) / figH;
   const rodZ = zWall - size.depth * 0.5;
-  const CENTER_Y = base + (FIGURE.height * scale) / 2;
+  const CENTER_Y = base + (figH * scale) / 2;
 
   // Halo: panel retroiluminado detrás del conjunto (luz propia, nítida).
   const haloMat = new THREE.MeshBasicMaterial({ map: haloTexture(), color: 0xffffff });
@@ -481,26 +484,37 @@ function buildShowcase(bay, m, obra, pieces, main, fabrics) {
   const figure = new THREE.Group();          // gira entero (scroll y balanceo)
   figure.position.set(0, base, rodZ);
   figure.scale.setScalar(scale);
-  figure.add(createMannequin(m.reflective));
-  const setH = FIGURE.setTop - FIGURE.setBottom;
-  const outfit = createWornOutfit(pieces, setH, fabrics?.get(obra.id), { depthRatio: 0.32 });
-  outfit.group.position.y = (FIGURE.setTop + FIGURE.setBottom) / 2;
-  figure.add(outfit.group);
+  let garments;
+  if (genesis) {
+    // El modelo de Blender: maniquí con el conjunto puesto y tela simulada.
+    figure.add(genesis.root);
+    garments = genesis.cloths.map((mesh) => {
+      const g = new THREE.Group();
+      g.userData = { cloth: mesh, piece: pieces.find((p) => mesh.name.toLowerCase().includes(p.pieza.id.slice(0, 5))) || pieces[0] };
+      return g;
+    });
+  } else {
+    figure.add(createMannequin(m.reflective));
+    const setH = FIGURE.setTop - FIGURE.setBottom;
+    const outfit = createWornOutfit(pieces, setH, fabrics?.get(obra.id), { depthRatio: 0.32 });
+    outfit.group.position.y = (FIGURE.setTop + FIGURE.setBottom) / 2;
+    figure.add(outfit.group);
+    garments = outfit.parts;
+  }
   bay.add(figure);
   const float = figure;
-  const garments = outfit.parts;
 
   // Cápsula de luz alrededor de la figura: aro en el suelo, aro arriba y líneas
   // verticales finas, como una vitrina de museo hecha solo de luz.
-  const POD = 0.44;
-  const podTop = base + FIGURE.height * scale + 0.22;
+  const POD = 0.6;   // ancha: nada de la figura roza la vitrina
+  const podTop = Math.min(top - 0.06, base + figH * scale + 0.2);
   for (const [y, delay2] of [[base + 0.004, delay + 0.05], [podTop, delay + 0.15]]) {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(POD, 0.006, 8, 140), m.glow(0.95, delay2));
     ring.rotation.x = Math.PI / 2;
     ring.position.set(0, y, rodZ);
     bay.add(ring);
   }
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(POD - 0.02, 96), new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.3, metalness: 0.6 }));
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(POD - 0.02, 96), new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.75, metalness: 0.05 }));
   disc.rotation.x = -Math.PI / 2;
   disc.position.set(0, base + 0.002, rodZ);
   disc.receiveShadow = true;
@@ -534,6 +548,14 @@ function buildShowcase(bay, m, obra, pieces, main, fabrics) {
       rim.target = target;
       bay.add(rim);
     }
+    // Luz baja de relleno: piernas y pies del maniquí se leen sobre el fondo oscuro.
+    const lowT = new THREE.Object3D();
+    lowT.position.set(0, base + 0.75, rodZ);
+    bay.add(lowT);
+    const low = m.lamp(new THREE.SpotLight(0xffffff, 6, 4, 0.32, 0.7, 1.6), delay + 0.3);
+    low.position.set(0, base + 0.55, zWall + 1.2);
+    low.target = lowT;
+    bay.add(low);
     // Columnas de luz a cada lado del escaparate.
     for (const s of [-1, 1]) {
       const x = s * (size.w / 2 + 0.11);
@@ -558,6 +580,7 @@ function buildShowcase(bay, m, obra, pieces, main, fabrics) {
     garments,
     spot,
     float,
+    genesis,
     floatY: base,
     spin: 0,          // vuelta que le da el scroll (main.js)
     focus: toWorld(new THREE.Vector3(0, CENTER_Y, rodZ)),

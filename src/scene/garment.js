@@ -14,6 +14,8 @@ import * as THREE from "three";
 let weaveNormal = null;
 
 /** Mapa de relieve de un tejido de algodón (trama y urdimbre), generado una vez. */
+export function weaveTexture() { return getWeaveNormal(); }
+
 function getWeaveNormal() {
   if (weaveNormal) return weaveNormal;
   const N = 128;
