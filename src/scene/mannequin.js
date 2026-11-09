@@ -191,15 +191,6 @@ export function createMannequin(reflective = []) {
     m.castShadow = true;
     group.add(m);
   }
-  // Calcetines blancos: del tobillo a media espinilla.
-  for (const s of [-1, 1]) {
-    const sock = limb([
-      new THREE.Vector3(s * 0.1128, 0.46, -0.002),
-      new THREE.Vector3(s * 0.114, 0.28, -0.008),
-      new THREE.Vector3(s * 0.115, 0.1, -0.012),
-    ], (t) => 0.071 - 0.027 * t, { segments: 24, caps: false });
-    for (const g of sock) group.add(new THREE.Mesh(g, mats.sock));
-    group.add(shoe(s, mats));
-  }
+  // (Sin calcetines ni zapatos: Jano los quitó el 06/11/2026.)
   return group;
 }
