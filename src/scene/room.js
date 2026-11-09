@@ -22,8 +22,7 @@
    ========================================================= */
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { createWornOutfit } from "./garment.js";
-import { createMannequin, FIGURE } from "./mannequin.js";
+import { createHungPiece, HOOK_CENTER } from "./garment.js";
 import { marbleTexture, flutedNormal, smokedOakTexture, plaqueTexture, haloTexture, friezeTexture, cardTexture, ringTextTexture } from "./textures.js";
 
 export const ROOM = { radius: 5, height: 4.2, bays: 12 };
@@ -46,7 +45,7 @@ const FRIEZE = [
   "OBRAS ÚNICAS · 1/1", "LOS QUE ESTABAN, LO SABEN", "NO ES PARA TODOS", "CHART NOIR",
 ];
 
-export function createRoom({ obras, pieces, photos = [], fabrics = new Map(), genesis = null }) {
+export function createRoom({ obras, pieces, photos = [], fabrics = new Map() }) {
   const group = new THREE.Group();
   const reflective = [];
   const power = []; // luces que se encienden en la entrada: { delay, set(v) }
@@ -259,7 +258,7 @@ export function createRoom({ obras, pieces, photos = [], fabrics = new Map(), ge
       buildWardrobe(bay, M, i);
     } else if (used.has(i)) {
       const obra = used.get(i);
-      const d = buildShowcase(bay, M, obra, piecesByObra.get(obra.id) || [], i === 0, fabrics, i === 0 ? genesis : null);
+      const d = buildShowcase(bay, M, obra, piecesByObra.get(obra.id) || [], i === 0, fabrics);
       displays.push({ ...d, obra, angle: bayAngle(i), bay });
       if (i === 0) buildMuseumFront(bay, M, obra);
     } else if (i === 6 && photos.length) {
@@ -397,9 +396,8 @@ export function createRoom({ obras, pieces, photos = [], fabrics = new Map(), ge
   function update(t) {
     // Se balancea un poco en reposo; el scroll le da la vuelta entera.
     displays.forEach((d, k) => {
-      d.float.position.y = d.floatY; // de pie: no flota
+      d.float.position.y = d.floatY; // cuelga de la barra
       d.float.rotation.y = d.spin + Math.sin(t * 0.35 + k) * 0.08 * (1 - Math.min(1, d.spin * 4));
-      d.genesis?.update(d.float.rotation.y, t);
     });
   }
 
@@ -459,18 +457,21 @@ function buildNicheShell(bay, m, size, delay, { coves = true } = {}) {
 /* Escaparate de una obra: un maniquí de plata con el conjunto puesto, de pie
    dentro de una cápsula de luz, delante de un halo retroiluminado.
    Puede girar 360° (spin). */
-function buildShowcase(bay, m, obra, pieces, main, fabrics, genesis) {
+function buildShowcase(bay, m, obra, pieces, main, fabrics) {
   const size = main ? SHOWCASE : NICHE;
   const delay = main ? 1.3 : 1.6;
   // El escaparate principal no lleva tiras en los cantos: ya tiene halo y columnas de luz.
   const { zWall, zBack, top } = buildNicheShell(bay, m, size, delay, { coves: !main });
-  // El maniquí con la obra puesta, de pie en el suelo de la vitrina, a escala heroica.
+  // El conjunto colgado en sus perchas, como se lleva puesto (chaleco arriba, pantalón
+  // debajo), a escala heroica: prendas en 3D con su tela real, de una barra de luz.
   const base = size.y0 + 0.06;               // encima de la peana de mármol
-  // Escala heroica: la figura mide 2,25 m (el modelo de Blender, 1,80 m).
-  const figH = genesis ? genesis.height : FIGURE.height;
-  const scale = (main ? 2.25 : 1.98) / figH;
+  const scale = main ? 1.32 : 1.1;
   const rodZ = zWall - size.depth * 0.5;
-  const CENTER_Y = base + (figH * scale) / 2;
+  const GAP = 0.1;                           // entre el bajo del chaleco y la percha del pantalón
+  const hung = pieces.map((p) => ({ p, h: p.height + 0.05 }));
+  const total = hung.reduce((sum, x) => sum + x.h, 0) + GAP * (hung.length - 1) + HOOK_CENTER.y + 0.03;
+  const railY = Math.min(top - 0.2, base + 0.28 + total * scale);
+  const CENTER_Y = railY - (total * scale) / 2;
 
   // Halo: panel retroiluminado detrás del conjunto (luz propia, nítida).
   const haloMat = new THREE.MeshBasicMaterial({ map: haloTexture(), color: 0xffffff });
@@ -481,49 +482,43 @@ function buildShowcase(bay, m, obra, pieces, main, fabrics, genesis) {
   halo.position.set(0, size.y0 + size.h / 2 + 0.05, zBack + 0.012);
   bay.add(halo);
 
-  const figure = new THREE.Group();          // gira entero (scroll y balanceo)
-  figure.position.set(0, base, rodZ);
-  figure.scale.setScalar(scale);
-  let garments;
-  if (genesis) {
-    // El modelo de Blender: maniquí con el conjunto puesto y tela simulada.
-    figure.add(genesis.root);
-    garments = genesis.cloths.map((mesh) => {
-      const g = new THREE.Group();
-      g.userData = { cloth: mesh, piece: pieces.find((p) => mesh.name.toLowerCase().includes(p.pieza.id.slice(0, 5))) || pieces[0] };
-      return g;
-    });
-  } else {
-    figure.add(createMannequin(m.reflective));
-    const setH = FIGURE.setTop - FIGURE.setBottom;
-    const outfit = createWornOutfit(pieces, setH, fabrics?.get(obra.id), { depthRatio: 0.32 });
-    outfit.group.position.y = (FIGURE.setTop + FIGURE.setBottom) / 2;
-    figure.add(outfit.group);
-    garments = outfit.parts;
+  // Barra de luz: tubo de acero con una línea luminosa debajo (de aquí cuelga todo).
+  const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, size.w - 0.1, 32), m.chrome);
+  rail.rotation.z = Math.PI / 2;
+  rail.position.set(0, railY, rodZ);
+  bay.add(rail);
+  const railGlow = new THREE.Mesh(new THREE.BoxGeometry(size.w - 0.14, 0.006, 0.006), m.glow(1, delay + 0.05));
+  railGlow.position.set(0, railY - 0.017, rodZ);
+  bay.add(railGlow);
+  for (const sx of [-1, 1]) {                // soportes de la barra al fondo
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, rodZ - zBack, 16), m.chrome);
+    arm.rotation.x = Math.PI / 2;
+    arm.position.set(sx * (size.w / 2 - 0.12), railY, (rodZ + zBack) / 2);
+    bay.add(arm);
   }
-  bay.add(figure);
-  const float = figure;
 
-  // Cápsula de luz alrededor de la figura: aro en el suelo, aro arriba y líneas
-  // verticales finas, como una vitrina de museo hecha solo de luz.
-  const POD = 0.6;   // ancha: nada de la figura roza la vitrina
-  const podTop = Math.min(top - 0.06, base + figH * scale + 0.2);
-  for (const [y, delay2] of [[base + 0.004, delay + 0.05], [podTop, delay + 0.15]]) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(POD, 0.006, 8, 140), m.glow(0.95, delay2));
-    ring.rotation.x = Math.PI / 2;
-    ring.position.set(0, y, rodZ);
-    bay.add(ring);
-  }
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(POD - 0.02, 96), new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.75, metalness: 0.05 }));
-  disc.rotation.x = -Math.PI / 2;
-  disc.position.set(0, base + 0.002, rodZ);
-  disc.receiveShadow = true;
-  bay.add(disc);
-  for (const a of [Math.PI * 0.32, -Math.PI * 0.32, Math.PI * 0.72, -Math.PI * 0.72]) {
-    const line = new THREE.Mesh(new THREE.BoxGeometry(0.004, podTop - base, 0.004), m.glow(0.75, delay + 0.1));
-    line.position.set(Math.sin(a) * POD, (base + podTop) / 2, rodZ + Math.cos(a) * POD);
-    bay.add(line);
-  }
+  // Todo lo que gira (scroll y leve balanceo) cuelga de un eje en el centro de la barra.
+  const float = new THREE.Group();
+  float.position.set(0, railY, rodZ);
+  float.scale.setScalar(scale);
+  bay.add(float);
+  const garments = [];
+  let y = -0.012;                            // el primer gancho, sobre la barra
+  const fabric = fabrics?.get(obra.id);
+  hung.forEach(({ p, h }, k) => {
+    const g = createHungPiece(p, m.chrome, fabric);
+    g.position.set(-HOOK_CENTER.x, y - HOOK_CENTER.y, 0);
+    float.add(g);
+    garments.push(g);
+    if (k < hung.length - 1) {
+      // Varilla de acero hasta la siguiente percha (pasa por dentro del chaleco).
+      const next = y - HOOK_CENTER.y - h - GAP;
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, y - HOOK_CENTER.y - next + 0.02, 12), m.chrome);
+      rod.position.set(0, (y - HOOK_CENTER.y + next) / 2, 0);
+      float.add(rod);
+      y = next + HOOK_CENTER.y - 0.012;
+    }
+  });
 
   // Foco principal con sombras reales y dos luces laterales rasantes.
   const target = new THREE.Object3D();
@@ -548,14 +543,6 @@ function buildShowcase(bay, m, obra, pieces, main, fabrics, genesis) {
       rim.target = target;
       bay.add(rim);
     }
-    // Luz baja de relleno: piernas y pies del maniquí se leen sobre el fondo oscuro.
-    const lowT = new THREE.Object3D();
-    lowT.position.set(0, base + 0.75, rodZ);
-    bay.add(lowT);
-    const low = m.lamp(new THREE.SpotLight(0xffffff, 6, 4, 0.32, 0.7, 1.6), delay + 0.3);
-    low.position.set(0, base + 0.55, zWall + 1.2);
-    low.target = lowT;
-    bay.add(low);
     // Columnas de luz a cada lado del escaparate.
     for (const s of [-1, 1]) {
       const x = s * (size.w / 2 + 0.11);
@@ -580,11 +567,10 @@ function buildShowcase(bay, m, obra, pieces, main, fabrics, genesis) {
     garments,
     spot,
     float,
-    genesis,
-    floatY: base,
+    floatY: railY,
     spin: 0,          // vuelta que le da el scroll (main.js)
     focus: toWorld(new THREE.Vector3(0, CENTER_Y, rodZ)),
-    labelAt: toWorld(new THREE.Vector3(0, podTop + 0.08, rodZ)),
+    labelAt: toWorld(new THREE.Vector3(0, railY + 0.12, rodZ)),
   };
 }
 

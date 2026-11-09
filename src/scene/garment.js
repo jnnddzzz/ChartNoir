@@ -429,7 +429,7 @@ function createWornPiece(piece, w, h, fabric, depthRatio) {
   outer.castShadow = true;
   // Forro liso por dentro (polygonOffset: en las costuras, donde las caras se tocan, gana la tela).
   const lining = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    color: 0x1f1f20, roughness: 0.75, side: THREE.BackSide,
+    color: 0x9a8f86, roughness: 0.85, side: THREE.BackSide, // forro crudo en sombra, no un agujero negro
     polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 8,
   }));
   g.add(outer, lining);
@@ -506,4 +506,54 @@ export function createWornOutfit(pieces, height, fabric = null, { depthRatio } =
     parts.push(part);
   }
   return { group, parts, width: setW, height: setH };
+}
+
+/**
+ * Una pieza en 3D (volumen, tela real en los costados, forro y ribetes) colgada de su
+ * percha: el chaleco en una percha de hombros de madera negra (queda dentro, solo asoma
+ * el gancho); el pantalón en una percha de pinzas que lo sujeta por la cintura, delante
+ * y detrás. El gancho queda en el origen del grupo (HOOK_CENTER), como en createGarment.
+ */
+export function createHungPiece(piece, chrome, fabric) {
+  const group = new THREE.Group();
+  const swing = new THREE.Group();
+  group.add(swing);
+  const kind = piece.percha === "pinza" ? "pinza" : "hombros";
+  // Colgada, la prenda está más plana que puesta (sin cuerpo dentro).
+  const body = createWornPiece(piece, piece.width, piece.height, fabric, kind === "pinza" ? 0.1 : 0.13);
+  const top = kind === "pinza" ? -0.05 : -0.022;
+  body.position.y = top - piece.height / 2;
+  swing.add(body);
+
+  // La percha de hombros queda dentro del chaleco: más estrecha que sus hombros.
+  const hanger = createHanger(kind, chrome, kind === "pinza" ? Math.min(0.46, piece.width * 0.9) : piece.width * 0.62);
+  if (kind === "pinza") {
+    // Fondo de la cintura: las pinzas muerden la tela por delante y por detrás.
+    const pos = body.userData.cloth.geometry.attributes.position;
+    let d = 0;
+    for (let i = 0; i < pos.count; i++) if (pos.getY(i) > piece.height / 2 - 0.015) d = Math.max(d, Math.abs(pos.getZ(i)));
+    const clips = [];
+    hanger.traverse((o) => { if (o.isMesh && o.geometry.type === "BoxGeometry") clips.push(o); });
+    for (const c of clips) {
+      c.position.z = d + 0.006;
+      c.position.y = top + 0.004;
+      const back = c.clone();
+      back.position.z = -d - 0.006;
+      hanger.add(back);
+      // Brazo de acero de la barra a cada pinza (las pinzas no flotan).
+      for (const z of [d + 0.006, -d - 0.006]) {
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, Math.abs(z), 10), chrome);
+        arm.rotation.x = Math.PI / 2;
+        arm.position.set(c.position.x, -0.02, z / 2);
+        hanger.add(arm);
+        const drop = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 0.012, 10), chrome);
+        drop.position.set(c.position.x, -0.025, z);
+        hanger.add(drop);
+      }
+    }
+  }
+  hanger.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  swing.add(hanger);
+  group.userData = { cloth: body.userData.cloth, swing, piece };
+  return group;
 }

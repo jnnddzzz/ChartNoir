@@ -44,8 +44,6 @@ export const OBRAS = [
       "Una sola pieza en el mundo. Patrón, corte y costura a mano, sobre una tela toile granate elegida para esta obra y para ninguna otra.",
     proporcion: 0.5113, // ancho / alto del conjunto montado
     tela: "productos/obra-001/tela.webp", // la tela de cerca (muestra repetible): viste los costados en 3D
-    modelo3d: "productos/obra-001/genesis.glb?v=3", // maniquí con el conjunto puesto (scripts/genesis3d)
-    toile: "productos/obra-001/toile.webp?v=3",     // muestra grande de la tela, a escala real
     precio: "", // vacío = no se muestra
     piezas: [
       {

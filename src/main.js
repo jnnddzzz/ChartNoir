@@ -12,9 +12,6 @@ import { DROP_DATE, OBRAS, REDES, FEEDBACK_ENDPOINT, TALLER_FOTOS } from "./conf
 import { createStage } from "./scene/stage.js";
 import { createLogo } from "./scene/logo.js";
 import { createRoom } from "./scene/room.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
-import { dressGenesis } from "./scene/genesis.js";
 import { createControls } from "./interaction.js";
 import { runIntro } from "./intro.js";
 import { startCountdown } from "./countdown.js";
@@ -73,11 +70,8 @@ try {
     Promise.all(["500 46px Archivo", "600 62px Archivo", "400 30px Archivo"].map((f) => document.fonts?.load(f))).catch(() => {}),
     new Promise((r) => setTimeout(r, 2500)),
   ]);
-  sceneReady = Promise.all([loadPieces(manager), loadPhotos(manager), loadFabrics(manager), loadGenesis(manager), fontFor3D]).then(([pieces, photos, fabrics, genesisSrc]) => {
-    const reflectiveExtra = [];
-    const genesis = genesisSrc ? dressGenesis(genesisSrc.scene, genesisSrc.toile, reflectiveExtra) : null;
-    const room = createRoom({ obras: OBRAS, pieces, photos, fabrics, genesis });
-    room.reflective.push(...reflectiveExtra);
+  sceneReady = Promise.all([loadPieces(manager), loadPhotos(manager), loadFabrics(manager), fontFor3D]).then(([pieces, photos, fabrics]) => {
+    const room = createRoom({ obras: OBRAS, pieces, photos, fabrics });
     stage.scene.add(room.group);
     three.room = room;
     three.displays = room.displays;
@@ -129,23 +123,6 @@ function loadFabrics(mgr) {
     fabrics.set(o.id, t);
     res();
   }, undefined, () => res())))).then(() => fabrics);
-}
-
-/* Génesis en 3D (maniquí con el conjunto puesto) y su tela a escala real. Si no
-   carga, la vitrina usa el maniquí sencillo de antes: la web nunca se queda sin obra. */
-function loadGenesis(mgr) {
-  const obra = OBRAS[0];
-  if (!obra.modelo3d) return Promise.resolve(null);
-  // El modelo va comprimido con gltfpack (meshopt): pesa ~5 veces menos.
-  const gl = new GLTFLoader(mgr).setMeshoptDecoder(MeshoptDecoder);
-  const model = new Promise((res) => gl.load(obra.modelo3d, res, undefined, (e) => { console.warn("Génesis 3D no cargó", e); res(null); }));
-  const toile = new Promise((res) => new THREE.TextureLoader(mgr).load(obra.toile, (t) => {
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.anisotropy = 8;
-    res(t);
-  }, undefined, () => res(null)));
-  return Promise.all([model, toile]).then(([gltf, tex]) => (gltf && tex ? { scene: gltf.scene, toile: tex } : null));
 }
 
 /* Las fotos del proceso, para enmarcarlas en la pared del taller. */
@@ -391,7 +368,7 @@ function computeCamera(yaw, pitch, p) {
   camFinal.copy(dir(a, tmp)).multiplyScalar(port ? 1.6 : 0.75); // lejos: la figura entera cabe en pantalla
   camFinal.y = main.focus.y + 0.05;
   lookFinal.copy(main.focus);
-  if (port) lookFinal.y -= 0.38; // en vertical, la figura un poco más arriba: el rótulo final no tapa los pies
+  if (port) lookFinal.y -= 0.38; // en vertical, el conjunto un poco más arriba: el rótulo final no lo tapa
   // Curva que pasa por un lado del logo (nunca lo atraviesa).
   const side = tmp.set(Math.cos(a), 0, Math.sin(a));
   const sign = Math.sign(side.dot(camOrbit)) || 1;
